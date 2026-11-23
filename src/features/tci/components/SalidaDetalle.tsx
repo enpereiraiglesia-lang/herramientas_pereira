@@ -29,7 +29,7 @@ function TarjetaGrupo({
   onEditar: () => void
   onEliminar: () => void
 }) {
-  const t = totales(grupo.integrantes)
+  const t = totales([grupo])
   return (
     <article className="flex flex-col rounded-xl border border-slate-200/80 bg-white shadow-xs transition-shadow hover:shadow-md">
       <Link to={`/tci/grupos/${grupo.id}`} className="group flex flex-1 flex-col gap-3 p-4">
@@ -138,7 +138,7 @@ export function SalidaDetalle({ id }: { id: string }) {
     if (confirm(`¿Eliminar el grupo "${g.nombre}"? Se borrarán sus metas y fotos.`)) await s.eliminarGrupo(g.id)
   }
 
-  const t = totales(salida.grupos.flatMap((g) => g.integrantes))
+  const t = totales(salida.grupos)
 
   return (
     <>
@@ -204,7 +204,7 @@ export function SalidaDetalle({ id }: { id: string }) {
         <EmptyState
           icon={Users}
           title="Esta salida aún no tiene grupos"
-          description="Crea los grupos temporales, asigna un líder y agrega a los miembros con sus metas."
+          description="Crea los equipos, asigna un líder, define sus metas iniciales y agrega a los integrantes."
           action={
             esCoordinador && (
               <Button onClick={() => abrir({ tipo: 'grupo', grupo: null })}>

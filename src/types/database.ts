@@ -456,6 +456,14 @@ export type Database = {
           nombre: string
           zona: string | null
           lider_id: string | null
+          meta_kits: number
+          meta_casas: number
+          meta_referidos: number
+          meta_contactos: number
+          logro_kits: number
+          logro_casas: number
+          logro_referidos: number
+          logro_contactos: number
         }
         Insert: {
           id?: string
@@ -464,6 +472,14 @@ export type Database = {
           nombre: string
           zona?: string | null
           lider_id?: string | null
+          meta_kits?: number
+          meta_casas?: number
+          meta_referidos?: number
+          meta_contactos?: number
+          logro_kits?: number
+          logro_casas?: number
+          logro_referidos?: number
+          logro_contactos?: number
         }
         Update: {
           id?: string
@@ -472,6 +488,14 @@ export type Database = {
           nombre?: string
           zona?: string | null
           lider_id?: string | null
+          meta_kits?: number
+          meta_casas?: number
+          meta_referidos?: number
+          meta_contactos?: number
+          logro_kits?: number
+          logro_casas?: number
+          logro_referidos?: number
+          logro_contactos?: number
         }
         Relationships: [
           {
@@ -636,6 +660,7 @@ export type Database = {
         Returns: { id: string; nombre: string; tiene_usuario: boolean }[]
       }
       es_lider_tci: { Args: Record<PropertyKey, never>; Returns: boolean }
+      guardar_metricas_grupo_tci: { Args: { p_grupo: string; p_valores: Record<string, number> }; Returns: undefined }
       miembros_para_grupo_familiar: {
         Args: Record<PropertyKey, never>
         Returns: { id: string; nombre: string; grupo_familiar_id: string | null; grupo_nombre: string | null }[]

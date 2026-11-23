@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { mensajeError } from '../../../lib/errores'
 import { useAsync } from '../../../lib/useAsync'
 import { tciService } from '../services/tciService'
-import type { GrupoTciInput, Integrante, Metas, SalidaInput } from '../types'
+import type { GrupoTciInput, Logros, Metas, SalidaInput } from '../types'
 
 /** Ejecuta una acción, recarga y guarda el error legible */
 function useAccion(recargar: () => Promise<unknown>) {
@@ -80,14 +80,11 @@ export function useGrupoTci(id: string) {
     fotos: fotos.data ?? [],
     cargandoFotos: fotos.loading,
     ...accion,
-    agregarIntegrantes: (miembros: string[], metas: Metas) =>
-      accion.ejecutar(() => tciService.agregarIntegrantes(id, miembros, metas)),
-    asignarMetasATodos: (metas: Metas) => accion.ejecutar(() => tciService.asignarMetasATodos(id, metas)),
-    actualizarMetas: (integranteId: string, metas: Metas) =>
-      accion.ejecutar(() => tciService.actualizarIntegrante(integranteId, metas)),
-    /** Guarda logros sin recargar todo (la fila ya muestra el valor nuevo) */
-    guardarLogros: (integranteId: string, cambios: Partial<Integrante>) =>
-      tciService.actualizarIntegrante(integranteId, cambios),
+    agregarIntegrantes: (miembros: string[]) => accion.ejecutar(() => tciService.agregarIntegrantes(id, miembros)),
+    /** Metas del equipo (recarga para mostrar los valores guardados) */
+    guardarMetas: (metas: Metas) => accion.ejecutar(() => tciService.guardarMetricas(id, metas)),
+    /** Logros del equipo: se guardan sin recargar (los contadores ya muestran el valor nuevo) */
+    guardarLogros: (cambios: Partial<Logros>) => tciService.guardarMetricas(id, cambios),
     quitarIntegrante: (integranteId: string) => accion.ejecutar(() => tciService.quitarIntegrante(integranteId)),
     errorFotos: accionFotos.saveError,
     subiendo: accionFotos.guardando,

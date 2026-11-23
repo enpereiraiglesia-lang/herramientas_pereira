@@ -2,61 +2,69 @@ import { fechaLarga } from '../../components/ui/calendario/fechas'
 import { METRICAS, avanceGeneral, porcentaje, totales, type GrupoCompleto, type Salida, type Totales } from './types'
 
 interface Opciones {
-  detalle: boolean
+  /** Incluir los nombres de los integrantes de cada equipo */
+  integrantes: boolean
 }
 
-function lineasTotales(t: Totales) {
+const SEPARADOR = '━━━━━━━━━━━━━━'
+
+/** Una línea por métrica: "🌱 *Kits sembrados*: meta 50 → alcanzado *45* (90%) 🔸" */
+function lineasMetricas(t: Totales) {
   return METRICAS.map((m) => {
     const { meta, logro } = t[m.clave]
-    return `${m.emoji} ${m.label}: *${logro}*${meta ? ` / ${meta} (${porcentaje(logro, meta)}%)` : ''}`
+    if (!meta) return `${m.emoji} *${m.label}*: alcanzado *${logro}* (sin meta)`
+    const pct = porcentaje(logro, meta)
+    return `${m.emoji} *${m.label}*: meta ${meta} → alcanzado *${logro}* (${pct}%) ${pct >= 100 ? '✅' : '🔸'}`
   })
 }
 
-function bloqueGrupo(g: GrupoCompleto, { detalle }: Opciones) {
-  const t = totales(g.integrantes)
+function lineaCumplimiento(t: Totales) {
   const avance = avanceGeneral(t)
-  const lineas = [
-    `*👥 ${g.nombre}*${avance != null ? ` — ${avance}%` : ''}`,
-    `Líder: ${g.lider?.nombre ?? 'sin asignar'}${g.zona ? ` · Zona: ${g.zona}` : ''}`,
-    `Integrantes: ${g.integrantes.length} · Fotos: ${g.fotos.length}`,
-    ...lineasTotales(t),
-  ]
-  if (detalle && g.integrantes.length) {
-    lineas.push('', '_Detalle por integrante (logro/meta):_')
-    for (const i of g.integrantes) {
-      const datos = METRICAS.map((m) => `${m.corto} ${i[`logro_${m.clave}`]}/${i[`meta_${m.clave}`]}`).join(' · ')
-      lineas.push(`• ${i.miembro?.nombre ?? 'Integrante'}: ${datos}`)
-    }
-  }
-  return lineas.join('\n')
+  return avance == null ? null : `📈 Cumplimiento: *${avance}%*`
 }
 
-/** Reporte en texto con formato de WhatsApp (*negrita*, _cursiva_) */
+function bloqueEquipo(g: GrupoCompleto, { integrantes }: Opciones) {
+  const t = totales([g])
+  const nombres = g.integrantes.map((i) => i.miembro?.nombre).filter(Boolean)
+  return [
+    `*👥 ${g.nombre.toUpperCase()}*`,
+    `Líder: ${g.lider?.nombre ?? 'sin asignar'}${g.zona ? ` · Zona: ${g.zona}` : ''}`,
+    `Integrantes: ${g.integrantes.length}${g.fotos.length ? ` · Fotos: ${g.fotos.length}` : ''}`,
+    integrantes && nombres.length ? `_${nombres.join(', ')}_` : null,
+    '',
+    ...lineasMetricas(t),
+    lineaCumplimiento(t),
+  ]
+    .filter((l) => l !== null)
+    .join('\n')
+}
+
+/** Reporte con formato de WhatsApp (*negrita*, _cursiva_): meta inicial frente a lo alcanzado */
 export function armarReporte(salida: Salida, grupos: GrupoCompleto[], opciones: Opciones) {
-  const todos = grupos.flatMap((g) => g.integrantes)
-  const t = totales(todos)
-  const avance = avanceGeneral(t)
+  const t = totales(grupos)
+  const totalIntegrantes = grupos.reduce((s, g) => s + g.integrantes.length, 0)
   const fotos = grupos.reduce((s, g) => s + g.fotos.length, 0)
 
-  const encabezado = [
+  const lineas: (string | null)[] = [
     `*📋 REPORTE ${salida.nombre.toUpperCase()}*`,
     `📅 ${fechaLarga(salida.fecha)}`,
     salida.lugar ? `📍 ${salida.lugar}` : null,
-  ].filter(Boolean)
+  ]
 
-  const resumen =
-    grupos.length > 1
-      ? [
-          '',
-          `*📊 RESUMEN GENERAL*${avance != null ? ` — ${avance}%` : ''}`,
-          `Grupos: ${grupos.length} · Integrantes: ${todos.length} · Fotos: ${fotos}`,
-          ...lineasTotales(t),
-        ]
-      : []
+  if (grupos.length > 1) {
+    lineas.push(
+      '',
+      `*📊 RESULTADO GENERAL*`,
+      `Equipos: ${grupos.length} · Integrantes: ${totalIntegrantes}${fotos ? ` · Fotos: ${fotos}` : ''}`,
+      '',
+      ...lineasMetricas(t),
+      lineaCumplimiento(t)
+    )
+  }
 
-  const bloques = grupos.map((g) => bloqueGrupo(g, opciones))
+  for (const g of grupos) lineas.push('', SEPARADOR, '', bloqueEquipo(g, opciones))
 
-  return [...encabezado, ...resumen, '', bloques.join('\n\n━━━━━━━━━━\n\n'), '', '_¡Gloria a Dios por cada vida alcanzada!_ 🙌']
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
+  lineas.push('', SEPARADOR, '✅ meta cumplida · 🔸 en progreso', '', '_¡Gloria a Dios por cada vida alcanzada!_ 🙌')
+
+  return lineas.filter((l) => l !== null).join('\n')
 }

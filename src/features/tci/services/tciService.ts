@@ -3,8 +3,7 @@ import type {
   FotoConUrl,
   GrupoDetalle,
   GrupoTciInput,
-  Integrante,
-  Metas,
+  Metricas,
   MiembroTci,
   PersonaMini,
   SalidaCompleta,
@@ -25,7 +24,7 @@ export const tciService = {
   async listarSalidas(): Promise<SalidaResumen[]> {
     const { data, error } = await supabase
       .from('salidas_tci')
-      .select('*, grupos:tci_grupos(id, integrantes:tci_integrantes(*))')
+      .select('*, grupos:tci_grupos(*, integrantes:tci_integrantes(count))')
       .order('fecha', { ascending: false })
     if (error) throw error
     return data as unknown as SalidaResumen[]
@@ -103,20 +102,18 @@ export const tciService = {
     return data ?? []
   },
 
-  async agregarIntegrantes(grupoId: string, miembros: string[], metas: Metas) {
-    const filas = miembros.map((miembro_id) => ({ grupo_id: grupoId, miembro_id, ...metas }))
+  async agregarIntegrantes(grupoId: string, miembros: string[]) {
+    const filas = miembros.map((miembro_id) => ({ grupo_id: grupoId, miembro_id }))
     const { error } = await supabase.from('tci_integrantes').insert(filas)
     if (error) throw error
   },
 
-  async actualizarIntegrante(id: string, cambios: Partial<Integrante>) {
-    const { data, error } = await supabase.from('tci_integrantes').update(cambios).eq('id', id).select('id')
-    if (error) throw error
-    if (!data.length) throw new Error('No tienes permiso para editar este integrante')
-  },
-
-  async asignarMetasATodos(grupoId: string, metas: Metas) {
-    const { error } = await supabase.from('tci_integrantes').update(metas).eq('grupo_id', grupoId)
+  /** Metas y logros del equipo (el líder también puede guardarlos) */
+  async guardarMetricas(grupoId: string, valores: Partial<Metricas>) {
+    const { error } = await supabase.rpc('guardar_metricas_grupo_tci', {
+      p_grupo: grupoId,
+      p_valores: valores as Record<string, number>,
+    })
     if (error) throw error
   },
 

@@ -42,17 +42,17 @@ function VistaPrevia({ texto }: { texto: string }) {
   )
 }
 
-/** Vista previa del reporte y opciones para enviarlo por WhatsApp */
+/** Vista previa del reporte (meta inicial vs. alcanzado) y envío por WhatsApp */
 export function ReporteDrawer({ abierto, salida, grupos, onCerrar }: Props) {
   const [alcance, setAlcance] = useState('todos')
-  const [detalle, setDetalle] = useState(true)
+  const [conIntegrantes, setConIntegrantes] = useState(true)
   const [copiado, setCopiado] = useState(false)
   const [compartiendo, setCompartiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conArchivos] = useState(puedeCompartirArchivos)
 
   const elegidos = alcance === 'todos' ? grupos : grupos.filter((g) => g.id === alcance)
-  const texto = useMemo(() => armarReporte(salida, elegidos, { detalle }), [salida, elegidos, detalle])
+  const texto = useMemo(() => armarReporte(salida, elegidos, { integrantes: conIntegrantes }), [salida, elegidos, conIntegrantes])
   const totalFotos = elegidos.reduce((s, g) => s + g.fotos.length, 0)
 
   async function copiar() {
@@ -82,14 +82,14 @@ export function ReporteDrawer({ abierto, salida, grupos, onCerrar }: Props) {
       await navigator.clipboard?.writeText(texto).catch(() => {})
       await navigator.share({ text: texto, files: archivos })
     } catch (err) {
-      if ((err as DOMException)?.name !== 'AbortError') setError('No se pudieron compartir las fotos. Intenta enviar solo el texto.')
+      if ((err as DOMException)?.name !== 'AbortError') setError('No se pudieron compartir las fotos. Envía solo el reporte.')
     } finally {
       setCompartiendo(false)
     }
   }
 
   return (
-    <Drawer abierto={abierto} titulo="Reporte para WhatsApp" subtitulo={salida.nombre} onCerrar={onCerrar}>
+    <Drawer abierto={abierto} titulo="Reporte de la salida" subtitulo={salida.nombre} onCerrar={onCerrar}>
       <div className="flex flex-col gap-4">
         {grupos.length > 1 && (
           <Select
@@ -97,18 +97,21 @@ export function ReporteDrawer({ abierto, salida, grupos, onCerrar }: Props) {
             name="alcance"
             value={alcance}
             onChange={(e) => setAlcance(e.target.value)}
-            options={[{ value: 'todos', label: `Toda la salida (${grupos.length} grupos)` }, ...grupos.map((g) => ({ value: g.id, label: g.nombre }))]}
+            options={[
+              { value: 'todos', label: `Toda la salida (${grupos.length} equipos)` },
+              ...grupos.map((g) => ({ value: g.id, label: g.nombre })),
+            ]}
           />
         )}
 
         <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-slate-700">
           <input
             type="checkbox"
-            checked={detalle}
-            onChange={(e) => setDetalle(e.target.checked)}
+            checked={conIntegrantes}
+            onChange={(e) => setConIntegrantes(e.target.checked)}
             className="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
           />
-          Incluir el detalle de cada integrante
+          Incluir los nombres de los integrantes
         </label>
 
         {/* Vista previa estilo chat */}
@@ -120,7 +123,9 @@ export function ReporteDrawer({ abierto, salida, grupos, onCerrar }: Props) {
 
         {error && <Alert>{error}</Alert>}
 
+        {/* Envío */}
         <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-slate-200 bg-white px-4 pt-3 pb-1 sm:-mx-6 sm:px-6">
+          {/* WhatsApp se abre y ahí se elige el contacto o grupo */}
           <a
             href={`https://wa.me/?text=${encodeURIComponent(texto)}`}
             target="_blank"
@@ -150,9 +155,6 @@ export function ReporteDrawer({ abierto, salida, grupos, onCerrar }: Props) {
               Con fotos ({Math.min(totalFotos, MAX_FOTOS)})
             </button>
           </div>
-          {!conArchivos && totalFotos > 0 && (
-            <p className="text-center text-xs text-slate-500">Para enviar las fotos junto al reporte, ábrelo desde el celular.</p>
-          )}
         </div>
       </div>
     </Drawer>

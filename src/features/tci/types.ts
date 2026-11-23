@@ -34,7 +34,7 @@ export interface GrupoCompleto extends GrupoTci {
 }
 
 export interface SalidaResumen extends Salida {
-  grupos: { id: string; integrantes: Integrante[] }[]
+  grupos: (GrupoTci & { integrantes: { count: number }[] })[]
 }
 
 export interface SalidaCompleta extends Salida {
@@ -100,14 +100,17 @@ export type Metas = Record<`meta_${ClaveMetrica}`, number>
 export type Logros = Record<`logro_${ClaveMetrica}`, number>
 export type Totales = Record<ClaveMetrica, { meta: number; logro: number }>
 
-type ConMetricas = Metas & Logros
+/** Metas y logros del equipo (columnas de tci_grupos) */
+export type Metricas = Metas & Logros
+type ConMetricas = Metricas
 
-export function totales(integrantes: ConMetricas[]): Totales {
+/** Suma las metas y logros de uno o varios equipos */
+export function totales(equipos: ConMetricas[]): Totales {
   const t = {} as Totales
   for (const m of METRICAS) {
     t[m.clave] = {
-      meta: integrantes.reduce((s, i) => s + i[`meta_${m.clave}`], 0),
-      logro: integrantes.reduce((s, i) => s + i[`logro_${m.clave}`], 0),
+      meta: equipos.reduce((s, i) => s + i[`meta_${m.clave}`], 0),
+      logro: equipos.reduce((s, i) => s + i[`logro_${m.clave}`], 0),
     }
   }
   return t

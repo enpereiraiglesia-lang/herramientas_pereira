@@ -1,43 +1,34 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, MessageCircle, Target, UserPlus, Users } from 'lucide-react'
+import { ArrowLeft, MapPin, MessageCircle, UserMinus, UserPlus, Users } from 'lucide-react'
 import { Alert } from '../../../components/ui/Alert'
 import { Avatar } from '../../../components/ui/Avatar'
 import { Button } from '../../../components/ui/Button'
 import { Drawer } from '../../../components/ui/Drawer'
-import { EmptyState } from '../../../components/ui/EmptyState'
 import { Spinner } from '../../../components/ui/Spinner'
 import { fechaLarga } from '../../../components/ui/calendario/fechas'
 import { useGrupoTci } from '../hooks/useTci'
-import { METAS_VACIAS, totales, type GrupoCompleto, type IntegranteConMiembro, type Metas } from '../types'
+import type { GrupoCompleto, IntegranteConMiembro, Logros, Metas, Metricas } from '../types'
 import { AgregarIntegrantes } from './AgregarIntegrantes'
 import { FotosGrupo } from './FotosGrupo'
-import { IntegranteTarjeta } from './IntegranteTarjeta'
 import { MetasCampos } from './MetasCampos'
+import { MetasEquipo } from './MetasEquipo'
 import { ReporteDrawer } from './ReporteDrawer'
-import { ResumenMetricas } from './ResumenMetricas'
 
-type Panel =
-  | { tipo: 'agregar' }
-  | { tipo: 'metas'; integrante: IntegranteConMiembro | null } // null = a todos
-  | { tipo: 'reporte' }
-  | null
+type Panel = { tipo: 'agregar' } | { tipo: 'metas' } | { tipo: 'reporte' } | null
 
-function metasDe(i: IntegranteConMiembro | null): Metas {
-  if (!i) return METAS_VACIAS
-  return { meta_kits: i.meta_kits, meta_casas: i.meta_casas, meta_referidos: i.meta_referidos, meta_contactos: i.meta_contactos }
+function metasDe(g: Metricas): Metas {
+  return { meta_kits: g.meta_kits, meta_casas: g.meta_casas, meta_referidos: g.meta_referidos, meta_contactos: g.meta_contactos }
 }
 
 function FormMetas({
   inicial,
-  aTodos,
   guardando,
   error,
   onSubmit,
   onCancel,
 }: {
   inicial: Metas
-  aTodos: boolean
   guardando: boolean
   error: string | null
   onSubmit: (m: Metas) => void
@@ -47,7 +38,9 @@ function FormMetas({
   return (
     <div className="flex flex-col gap-5">
       {error && <Alert>{error}</Alert>}
-      {aTodos && <Alert type="info">Estas metas reemplazan las de todos los integrantes del grupo.</Alert>}
+      <p className="text-sm text-slate-600">
+        Lo que el equipo se propone alcanzar en esta salida. En el reporte se compara con lo alcanzado.
+      </p>
       <MetasCampos metas={metas} onChange={setMetas} />
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>
@@ -61,21 +54,17 @@ function FormMetas({
   )
 }
 
-/** Pantalla del grupo: aquí el líder diligencia logros, metas y fotos */
+/** Pantalla del grupo: el líder registra lo alcanzado por el equipo, los integrantes y las fotos */
 export function GrupoTciDetalle({ id }: { id: string }) {
   const g = useGrupoTci(id)
   const [panel, setPanel] = useState<Panel>(null)
-
-  // Totales en vivo: se recalculan con los logros que cada tarjeta reporta al guardar
-  const [logrosLocales, setLogrosLocales] = useState<Record<string, Partial<IntegranteConMiembro>>>({})
-  const integrantes = useMemo(
-    () => (g.grupo?.integrantes ?? []).map((i) => ({ ...i, ...logrosLocales[i.id] })),
-    [g.grupo, logrosLocales]
-  )
+  // Logros guardados desde los contadores (para que el reporte muestre lo último sin recargar)
+  const [logrosLocales, setLogrosLocales] = useState<Partial<Logros>>({})
 
   if (g.loading && !g.grupo) return <Spinner />
   if (g.error || !g.grupo) return <Alert>{g.error ?? 'No se encontró el grupo'}</Alert>
   const grupo = g.grupo
+  const actual: Metricas = { ...grupo, ...logrosLocales }
 
   function abrir(p: Panel) {
     g.limpiarError()
@@ -83,21 +72,16 @@ export function GrupoTciDetalle({ id }: { id: string }) {
   }
 
   async function guardarMetas(metas: Metas) {
-    if (panel?.tipo !== 'metas') return
-    const ok = panel.integrante ? await g.actualizarMetas(panel.integrante.id, metas) : await g.asignarMetasATodos(metas)
-    if (ok) {
-      setLogrosLocales({})
-      setPanel(null)
-    }
+    if (await g.guardarMetas(metas)) setPanel(null)
   }
 
   async function quitar(i: IntegranteConMiembro) {
-    if (confirm(`¿Quitar a ${i.miembro?.nombre ?? 'este integrante'} del grupo?`)) await g.quitarIntegrante(i.id)
+    if (confirm(`¿Quitar a ${i.miembro?.nombre ?? 'este integrante'} del equipo?`)) await g.quitarIntegrante(i.id)
   }
 
   const paraReporte: GrupoCompleto = {
     ...grupo,
-    integrantes,
+    ...logrosLocales,
     fotos: g.fotos.map((f) => ({ id: f.id, ruta: f.ruta })),
   }
 
@@ -136,7 +120,7 @@ export function GrupoTciDetalle({ id }: { id: string }) {
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           <MessageCircle className="h-4 w-4" />
-          Reporte del grupo
+          Enviar reporte
         </button>
       </div>
 
@@ -147,54 +131,46 @@ export function GrupoTciDetalle({ id }: { id: string }) {
       )}
 
       <div className="mb-6">
-        <ResumenMetricas totales={totales(integrantes)} />
+        <MetasEquipo
+          key={[grupo.meta_kits, grupo.meta_casas, grupo.meta_referidos, grupo.meta_contactos].join('-')}
+          valores={actual}
+          onGuardarLogros={async (cambios) => {
+            await g.guardarLogros(cambios)
+            setLogrosLocales((l) => ({ ...l, ...cambios }))
+          }}
+          onEditarMetas={() => abrir({ tipo: 'metas' })}
+        />
       </div>
 
-      <section className="mb-6">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <section className="mb-6 rounded-xl border border-slate-200/80 bg-white shadow-xs">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-6">
           <h2 className="flex items-center gap-2 text-base font-semibold text-navy-900">
             <Users className="h-4 w-4 text-slate-400" />
-            Integrantes <span className="font-normal text-slate-400">({integrantes.length})</span>
+            Integrantes del equipo <span className="font-normal text-slate-400">({grupo.integrantes.length})</span>
           </h2>
-          <div className="flex gap-2">
-            {integrantes.length > 0 && (
-              <Button variant="secondary" onClick={() => abrir({ tipo: 'metas', integrante: null })}>
-                <Target />
-                Metas a todos
-              </Button>
-            )}
-            <Button onClick={() => abrir({ tipo: 'agregar' })}>
-              <UserPlus />
-              Agregar
-            </Button>
-          </div>
-        </div>
-
-        {integrantes.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title="El grupo no tiene integrantes"
-            description="Agrega a los miembros que salen en este grupo y asígnales sus metas."
-            action={
-              <Button onClick={() => abrir({ tipo: 'agregar' })}>
-                <UserPlus />
-                Agregar integrantes
-              </Button>
-            }
-          />
+          <Button variant="secondary" onClick={() => abrir({ tipo: 'agregar' })}>
+            <UserPlus />
+            Agregar
+          </Button>
+        </header>
+        {grupo.integrantes.length === 0 ? (
+          <p className="px-6 py-8 text-center text-sm text-slate-500">Agrega a los miembros que salen en este equipo.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="grid grid-cols-1 gap-x-4 px-4 py-2 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
             {grupo.integrantes.map((i) => (
-              <IntegranteTarjeta
-                key={`${i.id}-${i.meta_kits}-${i.meta_casas}-${i.meta_referidos}-${i.meta_contactos}-${i.logro_kits}-${i.logro_casas}-${i.logro_referidos}-${i.logro_contactos}`}
-                integrante={i}
-                onGuardar={async (cambios) => {
-                  await g.guardarLogros(i.id, cambios)
-                  setLogrosLocales((l) => ({ ...l, [i.id]: { ...l[i.id], ...cambios } }))
-                }}
-                onEditarMetas={() => abrir({ tipo: 'metas', integrante: i })}
-                onQuitar={() => quitar(i)}
-              />
+              <li key={i.id} className="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0">
+                <Avatar nombre={i.miembro?.nombre ?? '?'} size="sm" />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy-900">{i.miembro?.nombre ?? 'Miembro'}</span>
+                <button
+                  type="button"
+                  onClick={() => quitar(i)}
+                  aria-label={`Quitar a ${i.miembro?.nombre}`}
+                  title="Quitar del equipo"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50"
+                >
+                  <UserMinus className="h-4 w-4" />
+                </button>
+              </li>
             ))}
           </ul>
         )}
@@ -215,8 +191,8 @@ export function GrupoTciDetalle({ id }: { id: string }) {
             yaEstan={new Set(grupo.integrantes.map((i) => i.miembro_id))}
             guardando={g.guardando}
             error={g.saveError}
-            onSubmit={async (miembros, metas) => {
-              const ok = await g.agregarIntegrantes(miembros, metas)
+            onSubmit={async (miembros) => {
+              const ok = await g.agregarIntegrantes(miembros)
               if (ok) setPanel(null)
               return ok
             }}
@@ -225,16 +201,10 @@ export function GrupoTciDetalle({ id }: { id: string }) {
         )}
       </Drawer>
 
-      <Drawer
-        abierto={panel?.tipo === 'metas'}
-        titulo={panel?.tipo === 'metas' && panel.integrante ? 'Metas del integrante' : 'Metas para todos'}
-        subtitulo={panel?.tipo === 'metas' ? (panel.integrante?.miembro?.nombre ?? grupo.nombre) : undefined}
-        onCerrar={() => setPanel(null)}
-      >
+      <Drawer abierto={panel?.tipo === 'metas'} titulo="Metas iniciales del equipo" subtitulo={grupo.nombre} onCerrar={() => setPanel(null)}>
         {panel?.tipo === 'metas' && (
           <FormMetas
-            inicial={metasDe(panel.integrante ?? grupo.integrantes[0] ?? null)}
-            aTodos={!panel.integrante}
+            inicial={metasDe(grupo)}
             guardando={g.guardando}
             error={g.saveError}
             onSubmit={guardarMetas}

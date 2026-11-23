@@ -17,8 +17,8 @@ import { SalidaForm } from './SalidaForm'
 
 function TarjetaSalida({ salida }: { salida: SalidaResumen }) {
   const d = desdeISO(salida.fecha)
-  const integrantes = salida.grupos.flatMap((g) => g.integrantes)
-  const avance = avanceGeneral(totales(integrantes))
+  const integrantes = salida.grupos.reduce((s, g) => s + (g.integrantes[0]?.count ?? 0), 0)
+  const avance = avanceGeneral(totales(salida.grupos))
   const h = hoy()
 
   return (
@@ -45,7 +45,7 @@ function TarjetaSalida({ salida }: { salida: SalidaResumen }) {
           )}
           <span className="flex items-center gap-1">
             <Users className="h-3 w-3" />
-            {salida.grupos.length} grupo{salida.grupos.length === 1 ? '' : 's'} · {integrantes.length} integrantes
+            {salida.grupos.length} grupo{salida.grupos.length === 1 ? '' : 's'} · {integrantes} integrantes
           </span>
         </div>
         <BarraAvance valor={avance} className="mt-auto" />

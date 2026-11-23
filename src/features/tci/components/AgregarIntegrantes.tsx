@@ -8,26 +8,23 @@ import { inputClass } from '../../../components/ui/Field'
 import { Spinner } from '../../../components/ui/Spinner'
 import { usePermisos } from '../../permisos/hooks/usePermisos'
 import { useMiembrosTci } from '../hooks/useTci'
-import { METAS_VACIAS, type Metas } from '../types'
-import { MetasCampos } from './MetasCampos'
 
 interface Props {
   yaEstan: Set<string>
   guardando: boolean
   error: string | null
-  onSubmit: (miembros: string[], metas: Metas) => Promise<boolean>
+  onSubmit: (miembros: string[]) => Promise<boolean>
   onCancel: () => void
 }
 
 const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-/** Buscar y elegir varios miembros a la vez, con metas iniciales */
+/** Buscar y elegir varios miembros a la vez para el equipo */
 export function AgregarIntegrantes({ yaEstan, guardando, error, onSubmit, onCancel }: Props) {
   const { miembros, loading, error: errorCarga } = useMiembrosTci()
   const { puede } = usePermisos()
   const [busqueda, setBusqueda] = useState('')
   const [elegidos, setElegidos] = useState<Set<string>>(new Set())
-  const [metas, setMetas] = useState<Metas>(METAS_VACIAS)
 
   const q = normalizar(busqueda.trim())
   const disponibles = miembros.filter((m) => !yaEstan.has(m.id) && (!q || normalizar(m.nombre).includes(q)))
@@ -104,18 +101,13 @@ export function AgregarIntegrantes({ yaEstan, guardando, error, onSubmit, onCanc
         </ul>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="mb-3 text-sm font-semibold text-navy-900">Metas para cada uno</p>
-        <MetasCampos metas={metas} onChange={setMetas} />
-        <p className="mt-2 text-xs text-slate-500">Luego puedes ajustar las metas de cada integrante por separado.</p>
-      </div>
 
       <div className="sticky bottom-0 -mx-4 flex flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:-mx-6 sm:flex-row sm:justify-end sm:px-6">
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button disabled={!elegidos.size} loading={guardando} onClick={() => onSubmit([...elegidos], metas)}>
-          Agregar {elegidos.size ? `${elegidos.size} ` : ''}al grupo
+        <Button disabled={!elegidos.size} loading={guardando} onClick={() => onSubmit([...elegidos])}>
+          Agregar {elegidos.size ? `${elegidos.size} ` : ''}al equipo
         </Button>
       </div>
     </div>
