@@ -7,7 +7,8 @@ import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { usePermisos } from '../../permisos/hooks/usePermisos'
 import { useMiembrosTci } from '../hooks/useTci'
-import type { GrupoTci, GrupoTciInput } from '../types'
+import { METAS_VACIAS, type GrupoTci, type GrupoTciInput, type Metas } from '../types'
+import { MetasCampos } from './MetasCampos'
 
 interface Props {
   salidaId: string
@@ -24,6 +25,16 @@ export function GrupoTciForm({ salidaId, inicial, sugerencia, guardando, error, 
   const { miembros, loading, error: errorMiembros } = useMiembrosTci()
   const { puede } = usePermisos()
   const elegido = miembros.find((m) => m.id === lider)
+  const [metas, setMetas] = useState<Metas>(
+    inicial
+      ? {
+          meta_kits: inicial.meta_kits,
+          meta_casas: inicial.meta_casas,
+          meta_referidos: inicial.meta_referidos,
+          meta_contactos: inicial.meta_contactos,
+        }
+      : METAS_VACIAS
+  )
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -33,6 +44,7 @@ export function GrupoTciForm({ salidaId, inicial, sugerencia, guardando, error, 
       nombre: String(f.get('nombre')).trim(),
       zona: String(f.get('zona') ?? '').trim() || null,
       lider_id: lider || null,
+      ...metas,
     })
   }
 
@@ -75,6 +87,13 @@ export function GrupoTciForm({ salidaId, inicial, sugerencia, guardando, error, 
             </p>
           ))}
       </div>
+      <fieldset className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <legend className="px-1 text-sm font-semibold text-navy-900">Metas iniciales del equipo</legend>
+        <p className="mb-3 text-xs text-slate-500">
+          Lo que el equipo se propone alcanzar. En el reporte se compara con lo alcanzado. Se pueden cambiar después.
+        </p>
+        <MetasCampos metas={metas} onChange={setMetas} />
+      </fieldset>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar
