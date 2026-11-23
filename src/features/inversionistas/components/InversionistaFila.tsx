@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button'
 import { fechaCorta } from '../../../components/ui/calendario/fechas'
 import { formatMoneda, linkWhatsApp, telefonoLimpio } from '../../../lib/format'
 import type { InversionistaConEstado } from '../types'
+import { CategoriaBadge } from './CategoriaBadge'
 import { HistorialAnual } from './HistorialAnual'
 
 interface Props {
@@ -36,13 +37,16 @@ export function InversionistaFila({ inversionista: p, mes, mensaje, onRegistrar,
       <div className="flex min-w-0 items-center gap-3">
         <Avatar nombre={p.nombre} />
         <div className="min-w-0">
-          <button
-            type="button"
-            onClick={onDetalle}
-            className="block max-w-full truncate text-left font-semibold text-navy-900 hover:text-primary-700 hover:underline"
-          >
-            {p.nombre}
-          </button>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <button
+              type="button"
+              onClick={onDetalle}
+              className="block max-w-full truncate text-left font-semibold text-navy-900 hover:text-primary-700 hover:underline"
+            >
+              {p.nombre}
+            </button>
+            <CategoriaBadge cuotaMensual={p.cuota_mensual} />
+          </div>
           <p className="text-xs text-slate-500">
             Cuota:{' '}
             {p.cuota_mensual != null ? (

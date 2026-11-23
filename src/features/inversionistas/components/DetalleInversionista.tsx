@@ -21,7 +21,8 @@ import { inputClass } from '../../../components/ui/Field'
 import { MESES_CORTOS, fechaCorta, mesActual, nombreMes } from '../../../components/ui/calendario/fechas'
 import { formatMoneda, linkWhatsApp, telefonoLimpio } from '../../../lib/format'
 import { armarMensaje } from '../mensaje'
-import type { Cuota, CuotaInput, InversionistaConEstado } from '../types'
+import { CUOTA_INVERSIONISTA, type Cuota, type CuotaInput, type InversionistaConEstado } from '../types'
+import { CategoriaBadge } from './CategoriaBadge'
 import { CuotaForm } from './CuotaForm'
 
 interface Props {
@@ -130,6 +131,10 @@ function CuotaPactada({
           <span className="text-base font-medium text-slate-400"> / mes</span>
         </p>
       )}
+      <p className="mt-2 text-xs text-slate-500">
+        Desde {formatMoneda(CUOTA_INVERSIONISTA)} es <strong className="font-medium">Inversionista</strong>; con una cuota
+        menor es <strong className="font-medium">Microinversionista</strong>.
+      </p>
     </section>
   )
 }
@@ -174,7 +179,17 @@ export function DetalleInversionista({
   const mesPendiente = vencidosSinPago.at(-1)?.m ?? mes
 
   return (
-    <Drawer abierto titulo={p.nombre} subtitulo="Inversionista del Reino" onCerrar={onCerrar}>
+    <Drawer
+      abierto
+      titulo={p.nombre}
+      subtitulo={
+        <span className="flex flex-wrap items-center gap-2">
+          Inversionista del Reino
+          <CategoriaBadge cuotaMensual={p.cuota_mensual} />
+        </span>
+      }
+      onCerrar={onCerrar}
+    >
       {vista.tipo === 'cuota' ? (
         <div className="flex flex-col gap-4">
           <button

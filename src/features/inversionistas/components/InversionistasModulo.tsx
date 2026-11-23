@@ -9,7 +9,15 @@ import { PageHeader } from '../../../components/ui/PageHeader'
 import { Spinner } from '../../../components/ui/Spinner'
 import { mesActual, nombreMes } from '../../../components/ui/calendario/fechas'
 import { useInversionistas } from '../hooks/useInversionistas'
-import type { Cuota, CuotaInput, FiltroEstado, InversionistaConEstado } from '../types'
+import {
+  CATEGORIAS,
+  categoriaDe,
+  type Categoria,
+  type Cuota,
+  type CuotaInput,
+  type FiltroEstado,
+  type InversionistaConEstado,
+} from '../types'
 import { CuotaForm } from './CuotaForm'
 import { DetalleInversionista } from './DetalleInversionista'
 import { InversionistaFila } from './InversionistaFila'
@@ -33,6 +41,7 @@ export function InversionistasModulo() {
   const [mes, setMes] = useState(mesActual)
   const [filtro, setFiltro] = useState<FiltroEstado>('todos')
   const [busqueda, setBusqueda] = useState('')
+  const [categoria, setCategoria] = useState<Categoria | ''>('')
   const busquedaDiferida = useDeferredValue(busqueda)
   const [plantilla, setPlantilla] = useState(leerPlantilla)
   const [formulario, setFormulario] = useState<Formulario | null>(null)
@@ -66,6 +75,7 @@ export function InversionistasModulo() {
   const visibles = inversionistas
     .filter((p) => (filtro === 'pendientes' ? !p.cuotaDelMes : filtro === 'al_dia' ? !!p.cuotaDelMes : true))
     .filter((p) => !q || normalizar(p.nombre).includes(q) || (p.celular ?? '').includes(q))
+    .filter((p) => !categoria || categoriaDe(p.cuota_mensual) === categoria)
     // Pendientes primero: son los que requieren acción
     .sort((a, b) => Number(!!a.cuotaDelMes) - Number(!!b.cuotaDelMes))
 
@@ -154,6 +164,20 @@ export function InversionistasModulo() {
                   </button>
                 ))}
               </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <select
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value as Categoria | '')}
+                aria-label="Filtrar por categoría"
+                className={`${inputClass} sm:w-48`}
+              >
+                <option value="">Todas las categorías</option>
+                {(Object.keys(CATEGORIAS) as Categoria[]).map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORIAS[c].label} ({inversionistas.filter((p) => categoriaDe(p.cuota_mensual) === c).length})
+                  </option>
+                ))}
+              </select>
               <div className="relative sm:w-64">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -164,6 +188,7 @@ export function InversionistasModulo() {
                   aria-label="Buscar inversionista"
                   className={`${inputClass} pl-9`}
                 />
+              </div>
               </div>
             </header>
 
