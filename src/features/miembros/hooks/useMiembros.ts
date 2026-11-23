@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { mensajeError } from '../../../lib/errores'
 import { useAsync } from '../../../lib/useAsync'
 import { miembrosService } from '../services/miembrosService'
-import type { FiltrosMiembros, MiembroInput } from '../types'
+import type { FiltrosMiembros, MiembroInput, ServicioElegido } from '../types'
 
 export function useMiembros(filtros: FiltrosMiembros) {
   const { data, loading, error, reload } = useAsync(
@@ -21,7 +21,13 @@ export function useMiembros(filtros: FiltrosMiembros) {
       return true
     } catch (err) {
       const msg = mensajeError(err, 'No se pudo guardar')
-      setSaveError(msg.includes('miembros_correo_idx') ? 'Ya existe un miembro con ese correo' : msg)
+      setSaveError(
+        msg.includes('miembros_correo_idx')
+          ? 'Ya existe un miembro con ese correo'
+          : msg.includes('servicios_nombre_idx')
+            ? 'Ya existe un servicio con ese nombre'
+            : msg
+      )
       return false
     } finally {
       setGuardando(false)
@@ -35,8 +41,16 @@ export function useMiembros(filtros: FiltrosMiembros) {
     guardando,
     saveError,
     limpiarError: () => setSaveError(null),
-    crear: (input: MiembroInput) => ejecutar(() => miembrosService.crear(input)),
-    actualizar: (id: string, input: MiembroInput) => ejecutar(() => miembrosService.actualizar(id, input)),
+    crear: (input: MiembroInput, servicio?: ServicioElegido) =>
+      ejecutar(async () => {
+        const id = await miembrosService.crear(input)
+        if (servicio?.servicioId) await miembrosService.asignarServicio(id, servicio.servicioId, servicio.fechaInicio)
+      }),
+    actualizar: (id: string, input: MiembroInput, servicio?: ServicioElegido) =>
+      ejecutar(async () => {
+        await miembrosService.actualizar(id, input)
+        if (servicio) await miembrosService.asignarServicio(id, servicio.servicioId, servicio.fechaInicio)
+      }),
     eliminar: (id: string) => ejecutar(() => miembrosService.eliminar(id)),
   }
 }

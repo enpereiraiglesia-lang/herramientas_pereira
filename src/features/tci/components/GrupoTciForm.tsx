@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle, UserCheck } from 'lucide-react'
 import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
+import { DatePicker } from '../../../components/ui/DatePicker'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { usePermisos } from '../../permisos/hooks/usePermisos'
@@ -12,6 +13,8 @@ import { MetasCampos } from './MetasCampos'
 
 interface Props {
   salidaId: string
+  /** Fecha de la salida: es la fecha por defecto del equipo */
+  fechaSalida: string
   inicial?: GrupoTci | null
   sugerencia: string
   guardando: boolean
@@ -20,8 +23,9 @@ interface Props {
   onCancel: () => void
 }
 
-export function GrupoTciForm({ salidaId, inicial, sugerencia, guardando, error, onSubmit, onCancel }: Props) {
+export function GrupoTciForm({ salidaId, fechaSalida, inicial, sugerencia, guardando, error, onSubmit, onCancel }: Props) {
   const [lider, setLider] = useState(inicial?.lider_id ?? '')
+  const [fecha, setFecha] = useState<string | null>(inicial?.fecha ?? fechaSalida)
   const { miembros, loading, error: errorMiembros } = useMiembrosTci()
   const { puede } = usePermisos()
   const elegido = miembros.find((m) => m.id === lider)
@@ -44,6 +48,8 @@ export function GrupoTciForm({ salidaId, inicial, sugerencia, guardando, error, 
       nombre: String(f.get('nombre')).trim(),
       zona: String(f.get('zona') ?? '').trim() || null,
       lider_id: lider || null,
+      // Si es la misma fecha de la salida no se guarda aparte (sigue a la salida si esta cambia)
+      fecha: fecha && fecha !== fechaSalida ? fecha : null,
       ...metas,
     })
   }
@@ -53,6 +59,14 @@ export function GrupoTciForm({ salidaId, inicial, sugerencia, guardando, error, 
       {error && <Alert>{error}</Alert>}
       <Input label="Nombre del grupo *" name="nombre" required defaultValue={inicial?.nombre ?? sugerencia} autoComplete="off" />
       <Input label="Zona / calles asignadas" name="zona" placeholder="Ej: Calles 10 a 15" defaultValue={inicial?.zona ?? ''} />
+      <DatePicker
+        label="Fecha del equipo *"
+        name="fecha_grupo"
+        required
+        value={fecha}
+        onChange={setFecha}
+        ayuda={fecha === fechaSalida ? 'Igual a la fecha de la salida.' : 'Diferente a la fecha de la salida.'}
+      />
       <div className="flex flex-col gap-1.5">
         <Select
           label="Líder del grupo (miembro de la iglesia)"

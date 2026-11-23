@@ -5,6 +5,36 @@ export type MiembroInput = Omit<TablesInsert<'miembros'>, 'id' | 'created_at' | 
 
 export type FiltroSiNo = '' | 'si' | 'no'
 
+export type Servicio = Tables<'servicios'>
+
+/** Servicio que realiza hoy el miembro */
+export interface AsignacionActual {
+  id: string
+  fecha_inicio: string
+  servicio: Servicio
+}
+
+/** Miembro con su servicio actual y las herramientas a las que está vinculado */
+export interface MiembroDirectorio extends Miembro {
+  servicioActual: AsignacionActual | null
+  grupoFamiliar: { nombre: string } | null
+  camara: { nombre: string } | null
+}
+
+/** Servicio elegido en el formulario (undefined = no se tocó) */
+export interface ServicioElegido {
+  servicioId: string | null
+  fechaInicio: string | null
+}
+
+export type FiltroRotacion = '' | 'por_rotar' | 'vencida' | 'sin_servicio'
+
+export const OPCIONES_ROTACION = [
+  { value: 'por_rotar', label: 'Le toca rotar pronto o ya' },
+  { value: 'vencida', label: 'Rotación vencida' },
+  { value: 'sin_servicio', label: 'Sin servicio asignado' },
+]
+
 export type RangoEdad = NonNullable<Miembro['rango_edad']>
 
 export const RANGOS_EDAD: Record<RangoEdad, string> = {
@@ -25,6 +55,7 @@ export interface FiltrosMiembros {
   inversionista: FiltroSiNo
   ceppev: FiltroSiNo
   rangoEdad: RangoEdad | ''
+  rotacion: FiltroRotacion
 }
 
 export const OPCIONES_SI_NO = [

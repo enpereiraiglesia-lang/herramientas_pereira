@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Camera, ChevronRight, MapPin, MessageCircle, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Camera, ChevronRight, MapPin, MessageCircle, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { Alert } from '../../../components/ui/Alert'
 import { Avatar } from '../../../components/ui/Avatar'
 import { Button } from '../../../components/ui/Button'
 import { Drawer } from '../../../components/ui/Drawer'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Spinner } from '../../../components/ui/Spinner'
-import { fechaLarga } from '../../../components/ui/calendario/fechas'
+import { fechaCorta, fechaLarga } from '../../../components/ui/calendario/fechas'
 import { usePermisos } from '../../permisos/hooks/usePermisos'
 import { useSalida } from '../hooks/useTci'
 import { METRICAS, avanceGeneral, totales, type GrupoCompleto, type GrupoTciInput, type SalidaInput } from '../types'
@@ -40,6 +40,12 @@ function TarjetaGrupo({
               <p className="flex items-center gap-1 truncate text-xs text-slate-500">
                 <MapPin className="h-3 w-3 shrink-0" />
                 {grupo.zona}
+              </p>
+            )}
+            {grupo.fecha && (
+              <p className="flex items-center gap-1 truncate text-xs font-medium text-primary-700">
+                <CalendarDays className="h-3 w-3 shrink-0" />
+                {fechaCorta(grupo.fecha)}
               </p>
             )}
           </div>
@@ -254,6 +260,7 @@ export function SalidaDetalle({ id }: { id: string }) {
         {panel?.tipo === 'grupo' && (
           <GrupoTciForm
             salidaId={salida.id}
+            fechaSalida={salida.fecha}
             inicial={panel.grupo}
             sugerencia={`Grupo ${salida.grupos.length + 1}`}
             guardando={s.guardando}

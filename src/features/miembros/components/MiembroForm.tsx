@@ -3,18 +3,28 @@ import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
-import { mesActual } from '../../../components/ui/calendario/fechas'
+import { fechaCorta, hoy, mesActual } from '../../../components/ui/calendario/fechas'
+import { DatePicker } from '../../../components/ui/DatePicker'
 import { MonthPicker } from '../../../components/ui/MonthPicker'
 import { GrupoSelect } from '../../grupos/components/GrupoSelect'
 import { tiempoDesde } from '../../../lib/format'
-import { OPCIONES_RANGO_EDAD, type Miembro, type MiembroInput, type RangoEdad } from '../types'
+import { infoRotacion, tiempoEnServicio } from '../rotacion'
+import {
+  OPCIONES_RANGO_EDAD,
+  type MiembroDirectorio,
+  type MiembroInput,
+  type RangoEdad,
+  type Servicio,
+  type ServicioElegido,
+} from '../types'
 import { PreguntaSiNo } from './PreguntaSiNo'
+import { ServicioSelect } from './ServicioSelect'
 
 interface Props {
-  inicial?: Miembro | null
+  inicial?: MiembroDirectorio | null
   guardando: boolean
   error: string | null
-  onSubmit: (input: MiembroInput) => Promise<boolean>
+  onSubmit: (input: MiembroInput, servicio?: ServicioElegido) => Promise<boolean>
   onCancel: () => void
 }
 
@@ -26,11 +36,22 @@ export function MiembroForm({ inicial, guardando, error, onSubmit, onCancel }: P
   // El input "month" usa el formato AAAA-MM; en la BD se guarda el día 1 de ese mes
   const [mesCeppev, setMesCeppev] = useState(inicial?.fecha_ceppev?.slice(0, 7) ?? '')
   const [mesMaximo] = useState(mesActual)
+  // Servicio actual y desde cuándo lo realiza
+  const actual = inicial?.servicioActual ?? null
+  const [servicio, setServicio] = useState<Servicio | null>(actual?.servicio ?? null)
+  const [inicioServicio, setInicioServicio] = useState<string | null>(actual?.fecha_inicio ?? hoy())
+  const cambioServicio = (servicio?.id ?? null) !== (actual?.servicio.id ?? null)
+  const rotacionPrevista = servicio && inicioServicio ? infoRotacion(inicioServicio, servicio.meses_rotacion) : null
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
     const texto = (k: string) => String(f.get(k) ?? '').trim() || null
+    // Solo se envía el servicio si cambió o se corrigió su fecha de inicio
+    const tocoServicio = cambioServicio || (servicio && inicioServicio !== actual?.fecha_inicio)
+    const servicioElegido: ServicioElegido | undefined = tocoServicio
+      ? { servicioId: servicio?.id ?? null, fechaInicio: inicioServicio }
+      : undefined
     await onSubmit({
       nombre: String(f.get('nombre')).trim(),
       celular: texto('celular'),
@@ -43,7 +64,7 @@ export function MiembroForm({ inicial, guardando, error, onSubmit, onCancel }: P
       inversionista_reino: inversionista,
       fue_ceppev: fueCeppev,
       fecha_ceppev: fueCeppev && mesCeppev ? `${mesCeppev}-01` : null,
-    })
+    }, servicioElegido)
   }
 
   return (
@@ -64,6 +85,50 @@ export function MiembroForm({ inicial, guardando, error, onSubmit, onCancel }: P
           defaultValue={inicial?.rango_edad ?? ''}
         />
       </div>
+
+      <fieldset className="grid grid-cols-1 gap-4 rounded-xl border border-primary-200 bg-primary-50/40 p-4 md:grid-cols-2">
+        <legend className="px-1 text-sm font-semibold text-navy-900">Servicio actual</legend>
+        <ServicioSelect
+          value={servicio?.id ?? ''}
+          onChange={(s) => {
+            setServicio(s)
+            // Al cambiar de servicio, por defecto empieza hoy
+            if ((s?.id ?? null) !== (actual?.servicio.id ?? null)) setInicioServicio(hoy())
+            else setInicioServicio(actual?.fecha_inicio ?? hoy())
+          }}
+        />
+        {servicio && (
+          <DatePicker
+            label="¿Desde cuándo lo realiza? *"
+            name="inicio_servicio"
+            required
+            max={hoy()}
+            value={inicioServicio}
+            onChange={setInicioServicio}
+            ayuda={inicioServicio ? `${tiempoEnServicio(inicioServicio)[0].toUpperCase()}${tiempoEnServicio(inicioServicio).slice(1)} en este servicio.` : undefined}
+          />
+        )}
+        {rotacionPrevista && (
+          <p
+            className={`rounded-lg px-3 py-2 text-sm md:col-span-2 ${
+              rotacionPrevista.estado === 'vencida'
+                ? 'bg-rose-50 text-rose-700'
+                : rotacionPrevista.estado === 'proxima'
+                  ? 'bg-amber-50 text-amber-800'
+                  : 'bg-white text-slate-700'
+            }`}
+          >
+            Rota cada {servicio?.meses_rotacion} mes{servicio?.meses_rotacion === 1 ? '' : 'es'}:{' '}
+            <strong className="font-semibold">{rotacionPrevista.texto.toLowerCase()}</strong> ({rotacionPrevista.detalle.toLowerCase()}).
+          </p>
+        )}
+        {actual && cambioServicio && (
+          <p className="text-xs text-slate-600 md:col-span-2">
+            El servicio anterior (<strong>{actual.servicio.nombre}</strong>, desde el {fechaCorta(actual.fecha_inicio)}) quedará
+            en su historial.
+          </p>
+        )}
+      </fieldset>
 
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
         <PreguntaSiNo

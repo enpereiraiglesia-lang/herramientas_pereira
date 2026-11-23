@@ -99,7 +99,7 @@ export function GrupoTciDetalle({ id }: { id: string }) {
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight text-navy-900 sm:text-[1.75rem]">{grupo.nombre}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-            <span className="first-letter:uppercase">{fechaLarga(grupo.salida.fecha)}</span>
+            <span className="first-letter:uppercase">{fechaLarga(grupo.fecha ?? grupo.salida.fecha)}</span>
             {grupo.zona && (
               <span className="flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5" />

@@ -23,11 +23,14 @@ function lineaCumplimiento(t: Totales) {
   return avance == null ? null : `📈 Cumplimiento: *${avance}%*`
 }
 
-function bloqueEquipo(g: GrupoCompleto, { integrantes }: Opciones) {
+function bloqueEquipo(g: GrupoCompleto, { integrantes }: Opciones, fechaSalida: string) {
   const t = totales([g])
+  // Solo se muestra la fecha del equipo si es distinta a la de la salida
+  if (g.fecha === fechaSalida) g = { ...g, fecha: null }
   const nombres = g.integrantes.map((i) => i.miembro?.nombre).filter(Boolean)
   return [
     `*👥 ${g.nombre.toUpperCase()}*`,
+    g.fecha ? `📅 ${fechaLarga(g.fecha)}` : null,
     `Líder: ${g.lider?.nombre ?? 'sin asignar'}${g.zona ? ` · Zona: ${g.zona}` : ''}`,
     `Integrantes: ${g.integrantes.length}${g.fotos.length ? ` · Fotos: ${g.fotos.length}` : ''}`,
     integrantes && nombres.length ? `_${nombres.join(', ')}_` : null,
@@ -62,7 +65,7 @@ export function armarReporte(salida: Salida, grupos: GrupoCompleto[], opciones: 
     )
   }
 
-  for (const g of grupos) lineas.push('', SEPARADOR, '', bloqueEquipo(g, opciones))
+  for (const g of grupos) lineas.push('', SEPARADOR, '', bloqueEquipo(g, opciones, salida.fecha))
 
   lineas.push('', SEPARADOR, '✅ meta cumplida · 🔸 en progreso', '', '_¡Gloria a Dios por cada vida alcanzada!_ 🙌')
 

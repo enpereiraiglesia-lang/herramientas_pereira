@@ -459,6 +459,7 @@ export type Database = {
           nombre: string
           zona: string | null
           lider_id: string | null
+          fecha: string | null
           meta_kits: number
           meta_casas: number
           meta_referidos: number
@@ -475,6 +476,7 @@ export type Database = {
           nombre: string
           zona?: string | null
           lider_id?: string | null
+          fecha?: string | null
           meta_kits?: number
           meta_casas?: number
           meta_referidos?: number
@@ -491,6 +493,7 @@ export type Database = {
           nombre?: string
           zona?: string | null
           lider_id?: string | null
+          fecha?: string | null
           meta_kits?: number
           meta_casas?: number
           meta_referidos?: number
@@ -653,6 +656,75 @@ export type Database = {
           },
         ]
       }
+      servicios: {
+        Row: {
+          id: string
+          created_at: string
+          nombre: string
+          meses_rotacion: number
+          activo: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          nombre: string
+          meses_rotacion?: number
+          activo?: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          nombre?: string
+          meses_rotacion?: number
+          activo?: boolean
+        }
+        Relationships: []
+      }
+      asignaciones_servicio: {
+        Row: {
+          id: string
+          created_at: string
+          miembro_id: string
+          servicio_id: string
+          fecha_inicio: string
+          fecha_fin: string | null
+          asignado_por: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          miembro_id: string
+          servicio_id: string
+          fecha_inicio?: string
+          fecha_fin?: string | null
+          asignado_por?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          miembro_id?: string
+          servicio_id?: string
+          fecha_inicio?: string
+          fecha_fin?: string | null
+          asignado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'asignaciones_servicio_miembro_id_fkey'
+            columns: ['miembro_id']
+            isOneToOne: false
+            referencedRelation: 'miembros'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asignaciones_servicio_servicio_id_fkey'
+            columns: ['servicio_id']
+            isOneToOne: false
+            referencedRelation: 'servicios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -663,6 +735,10 @@ export type Database = {
         Returns: { id: string; nombre: string; tiene_usuario: boolean }[]
       }
       es_lider_tci: { Args: Record<PropertyKey, never>; Returns: boolean }
+      asignar_servicio_miembro: {
+        Args: { p_miembro: string; p_servicio: string | null; p_fecha_inicio: string | null }
+        Returns: undefined
+      }
       guardar_metricas_grupo_tci: { Args: { p_grupo: string; p_valores: Record<string, number> }; Returns: undefined }
       miembros_para_grupo_familiar: {
         Args: Record<PropertyKey, never>
