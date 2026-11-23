@@ -3,7 +3,8 @@ import type { FiltrosMiembros, MiembroInput } from '../types'
 
 export const miembrosService = {
   async listar(filtros: FiltrosMiembros) {
-    let query = supabase.from('miembros').select('*').order('nombre')
+    // Los inversionistas que no son miembros no aparecen en el directorio
+    let query = supabase.from('miembros').select('*').eq('es_miembro', true).order('nombre')
 
     const q = filtros.busqueda.trim()
     if (q) query = query.or(`nombre.ilike.%${q}%,celular.ilike.%${q}%,correo.ilike.%${q}%,direccion.ilike.%${q}%`)

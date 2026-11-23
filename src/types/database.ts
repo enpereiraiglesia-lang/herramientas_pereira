@@ -320,6 +320,8 @@ export type Database = {
           grupo_familiar_id: string | null
           camara_id: string | null
           cuota_mensual: number | null
+          es_miembro: boolean
+          fecha_aporte: string | null
         }
         Insert: {
           id?: string
@@ -335,6 +337,8 @@ export type Database = {
           grupo_familiar_id?: string | null
           camara_id?: string | null
           cuota_mensual?: number | null
+          es_miembro?: boolean
+          fecha_aporte?: string | null
         }
         Update: {
           id?: string
@@ -350,6 +354,8 @@ export type Database = {
           grupo_familiar_id?: string | null
           camara_id?: string | null
           cuota_mensual?: number | null
+          es_miembro?: boolean
+          fecha_aporte?: string | null
         }
         Relationships: [
           {
@@ -373,6 +379,7 @@ export type Database = {
           id: string
           created_at: string
           miembro_id: string
+          participacion_id: string
           periodo: string
           monto: number | null
           fecha_pago: string
@@ -382,7 +389,8 @@ export type Database = {
         Insert: {
           id?: string
           created_at?: string
-          miembro_id: string
+          miembro_id?: string
+          participacion_id: string
           periodo: string
           monto?: number | null
           fecha_pago?: string
@@ -393,6 +401,7 @@ export type Database = {
           id?: string
           created_at?: string
           miembro_id?: string
+          participacion_id?: string
           periodo?: string
           monto?: number | null
           fecha_pago?: string
@@ -576,6 +585,47 @@ export type Database = {
           },
         ]
       }
+      participaciones_inversion: {
+        Row: {
+          id: string
+          created_at: string
+          miembro_id: string
+          monto: number
+          fecha_aporte: string | null
+          nota: string | null
+          activa: boolean
+          creado_por: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          miembro_id: string
+          monto: number
+          fecha_aporte?: string | null
+          nota?: string | null
+          activa?: boolean
+          creado_por?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          miembro_id?: string
+          monto?: number
+          fecha_aporte?: string | null
+          nota?: string | null
+          activa?: boolean
+          creado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'participaciones_inversion_miembro_id_fkey'
+            columns: ['miembro_id']
+            isOneToOne: false
+            referencedRelation: 'miembros'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -602,6 +652,32 @@ export type Database = {
       vincular_contacto_grupo: { Args: { p_contacto: string; p_grupo: string }; Returns: undefined }
       desvincular_contacto_grupo: { Args: { p_contacto: string; p_grupo: string }; Returns: undefined }
       definir_cuota_inversionista: { Args: { p_miembro: string; p_monto: number | null }; Returns: undefined }
+      miembros_no_inversionistas: { Args: Record<PropertyKey, never>; Returns: { id: string; nombre: string }[] }
+      agregar_miembro_inversionista: { Args: { p_miembro: string; p_cuota: number | null }; Returns: undefined }
+      crear_inversionista_externo: {
+        Args: {
+          p_nombre: string
+          p_direccion: string
+          p_correo: string
+          p_celular: string
+          p_cuota: number | null
+          p_fecha_aporte: string | null
+        }
+        Returns: string
+      }
+      actualizar_inversionista_externo: {
+        Args: {
+          p_id: string
+          p_nombre: string
+          p_direccion: string
+          p_correo: string
+          p_celular: string
+          p_fecha_aporte: string | null
+        }
+        Returns: undefined
+      }
+      definir_fecha_aporte: { Args: { p_miembro: string; p_fecha: string | null }; Returns: undefined }
+      quitar_inversionista: { Args: { p_id: string }; Returns: undefined }
     }
     Enums: {
       rol_usuario: 'administrador' | 'colaborador'

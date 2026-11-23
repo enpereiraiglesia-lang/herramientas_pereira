@@ -40,8 +40,9 @@ export function MensajeRecordatorio({ plantilla, onChange }: Props) {
           />
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
             <p>
-              Usa <code className="rounded bg-slate-100 px-1 py-0.5">{'{nombre}'}</code> y{' '}
-              <code className="rounded bg-slate-100 px-1 py-0.5">{'{mes}'}</code>; se reemplazan al enviar.
+              Usa <code className="rounded bg-slate-100 px-1 py-0.5">{'{nombre}'}</code>,{' '}
+              <code className="rounded bg-slate-100 px-1 py-0.5">{'{mes}'}</code> y{' '}
+              <code className="rounded bg-slate-100 px-1 py-0.5">{'{monto}'}</code> (lo que debe del mes); se reemplazan al enviar.
             </p>
             {plantilla !== MENSAJE_RECORDATORIO && (
               <button

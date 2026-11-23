@@ -10,7 +10,7 @@ import { formatMoneda } from '../../../lib/format'
 import type { Cuota, CuotaInput } from '../types'
 
 interface Props {
-  miembroId: string
+  participacionId: string
   mesInicial: string
   inicial: Cuota | null
   montoSugerido: number | null
@@ -21,7 +21,7 @@ interface Props {
 }
 
 /** Formulario para registrar o editar la cuota de un mes */
-export function CuotaForm({ miembroId, mesInicial, inicial, montoSugerido, guardando, error, onSubmit, onCancel }: Props) {
+export function CuotaForm({ participacionId, mesInicial, inicial, montoSugerido, guardando, error, onSubmit, onCancel }: Props) {
   const [mes, setMes] = useState<string | null>(inicial?.periodo.slice(0, 7) ?? mesInicial)
   const [fechaPago, setFechaPago] = useState<string | null>(inicial?.fecha_pago ?? hoy())
   const [monto, setMonto] = useState(
@@ -34,7 +34,7 @@ export function CuotaForm({ miembroId, mesInicial, inicial, montoSugerido, guard
     const f = new FormData(e.currentTarget)
     const valor = monto.replace(/[^\d]/g, '')
     await onSubmit({
-      miembro_id: miembroId,
+      participacion_id: participacionId,
       periodo: `${mes}-01`,
       fecha_pago: fechaPago,
       monto: valor ? Number(valor) : null,
@@ -78,7 +78,7 @@ export function CuotaForm({ miembroId, mesInicial, inicial, montoSugerido, guard
             onClick={() => setMonto(String(montoSugerido))}
             className="self-start text-xs font-medium text-primary-700 hover:underline"
           >
-            Usar su última cuota: {formatMoneda(montoSugerido)}
+            Monto de la participación: {formatMoneda(montoSugerido)}
           </button>
         )}
       </Field>

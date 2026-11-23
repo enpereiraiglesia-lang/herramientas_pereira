@@ -1,6 +1,7 @@
 import { useDeferredValue, useState } from 'react'
-import { HandCoins, Search } from 'lucide-react'
+import { HandCoins, IdCard, Search, UserPlus } from 'lucide-react'
 import { Alert } from '../../../components/ui/Alert'
+import { Button } from '../../../components/ui/Button'
 import { Drawer } from '../../../components/ui/Drawer'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { inputClass } from '../../../components/ui/Field'
@@ -9,15 +10,19 @@ import { PageHeader } from '../../../components/ui/PageHeader'
 import { Spinner } from '../../../components/ui/Spinner'
 import { mesActual, nombreMes } from '../../../components/ui/calendario/fechas'
 import { useInversionistas } from '../hooks/useInversionistas'
+import { formatMoneda } from '../../../lib/format'
 import {
   CATEGORIAS,
-  categoriaDe,
+  CUOTA_INVERSIONISTA,
   type Categoria,
   type Cuota,
   type CuotaInput,
   type FiltroEstado,
   type InversionistaConEstado,
+  type ParticipacionConEstado,
 } from '../types'
+import { CategoriaBadge } from './CategoriaBadge'
+import { AgregarMiembroInversionista, CrearInversionista } from './AgregarInversionista'
 import { CuotaForm } from './CuotaForm'
 import { DetalleInversionista } from './DetalleInversionista'
 import { InversionistaFila } from './InversionistaFila'
@@ -27,7 +32,15 @@ import { ResumenCuotas } from './ResumenCuotas'
 
 interface Formulario {
   persona: InversionistaConEstado
+  participacion: ParticipacionConEstado
   cuota: Cuota | null
+}
+
+/** Orden en la grilla: primero quienes deben algo del mes */
+const ORDEN_ESTADO = { pendiente: 0, parcial: 1, sin_participacion: 2, al_dia: 3 }
+
+function tieneCategoria(p: InversionistaConEstado, c: Categoria) {
+  return c === 'sin_cuota' ? p.categorias.length === 0 : p.categorias.includes(c)
 }
 
 const normalizar = (s: string) =>
@@ -58,30 +71,50 @@ export function InversionistasModulo() {
     registrar,
     actualizar,
     anular,
-    definirCuota,
+    crearParticipacion,
+    actualizarParticipacion,
+    finalizarParticipacion,
+    agregarMiembro,
+    crearExterno,
+    actualizarExterno,
+    quitar,
   } = useInversionistas(mes)
+  // 'crear' = inversionista nuevo (no miembro); 'miembro' = marcar a un miembro existente
+  const [agregando, setAgregando] = useState<'crear' | 'miembro' | null>(null)
   const [detalleId, setDetalleId] = useState<string | null>(null)
   const detalle = inversionistas.find((p) => p.id === detalleId) ?? null
-  const esperadoMes = inversionistas.reduce((s, p) => s + (p.cuota_mensual ?? 0), 0)
 
-  const pagadas = inversionistas.filter((p) => p.cuotaDelMes)
-  const pendientes = inversionistas.length - pagadas.length
-  const recaudadoMes = pagadas.reduce((s, p) => s + (p.cuotaDelMes?.monto ?? 0), 0)
-  const idsActivos = new Set(inversionistas.map((p) => p.id))
-  const cuotasActivas = cuotasDelAnio.filter((c) => idsActivos.has(c.miembro_id))
+  // Totales por participación (una persona puede tener varias)
+  const participaciones = inversionistas.flatMap((p) => p.participaciones)
+  const participacionesPagadas = participaciones.filter((x) => x.cuotaDelMes)
+  const esperadoMes = participaciones.reduce((s, x) => s + x.monto, 0)
+  const recaudadoMes = inversionistas.reduce((s, p) => s + p.pagadoMes, 0)
+  const idsActivas = new Set(participaciones.map((x) => x.id))
+  const cuotasActivas = cuotasDelAnio.filter((c) => idsActivas.has(c.participacion_id))
   const recaudadoAnio = cuotasActivas.reduce((s, c) => s + (c.monto ?? 0), 0)
+
+  // Pestañas por persona
+  const conPendiente = inversionistas.filter((p) => p.estadoMes === 'pendiente' || p.estadoMes === 'parcial')
+  const alDia = inversionistas.filter((p) => p.estadoMes === 'al_dia')
+  const ambasCategorias = inversionistas.filter((p) => p.categorias.length > 1).length
 
   const q = normalizar(busquedaDiferida.trim())
   const visibles = inversionistas
-    .filter((p) => (filtro === 'pendientes' ? !p.cuotaDelMes : filtro === 'al_dia' ? !!p.cuotaDelMes : true))
+    .filter((p) =>
+      filtro === 'pendientes'
+        ? p.estadoMes === 'pendiente' || p.estadoMes === 'parcial'
+        : filtro === 'al_dia'
+          ? p.estadoMes === 'al_dia'
+          : true
+    )
     .filter((p) => !q || normalizar(p.nombre).includes(q) || (p.celular ?? '').includes(q))
-    .filter((p) => !categoria || categoriaDe(p.cuota_mensual) === categoria)
-    // Pendientes primero: son los que requieren acción
-    .sort((a, b) => Number(!!a.cuotaDelMes) - Number(!!b.cuotaDelMes))
+    .filter((p) => !categoria || tieneCategoria(p, categoria))
+    // Primero quienes deben algo: son los que requieren acción
+    .sort((a, b) => ORDEN_ESTADO[a.estadoMes] - ORDEN_ESTADO[b.estadoMes])
 
-  function abrir(persona: InversionistaConEstado, cuota: Cuota | null) {
+  function abrir(persona: InversionistaConEstado, participacion: ParticipacionConEstado, cuota: Cuota | null) {
     limpiarError()
-    setFormulario({ persona, cuota })
+    setFormulario({ persona, participacion, cuota })
   }
 
   async function guardar(input: CuotaInput) {
@@ -91,14 +124,14 @@ export function InversionistasModulo() {
     return ok
   }
 
-  async function anularCuota(p: InversionistaConEstado) {
-    if (p.cuotaDelMes && confirm(`¿Anular la cuota de ${nombreMes(mes)} de ${p.nombre}?`)) await anular(p.cuotaDelMes.id)
+  async function anularCuota(p: InversionistaConEstado, x: ParticipacionConEstado, c: Cuota) {
+    if (confirm(`¿Anular la cuota de ${nombreMes(mes)} de ${p.nombre} (${formatMoneda(x.monto)})?`)) await anular(c.id)
   }
 
   const pestanas: { valor: FiltroEstado; label: string; total: number }[] = [
     { valor: 'todos', label: 'Todos', total: inversionistas.length },
-    { valor: 'pendientes', label: 'Pendientes', total: pendientes },
-    { valor: 'al_dia', label: 'Al día', total: pagadas.length },
+    { valor: 'pendientes', label: 'Con pendientes', total: conPendiente.length },
+    { valor: 'al_dia', label: 'Al día', total: alDia.length },
   ]
 
   return (
@@ -106,7 +139,31 @@ export function InversionistasModulo() {
       <PageHeader
         title="Inversionistas del Reino"
         subtitle="Registro de cuotas mensuales de los miembros inversionistas"
-        actions={<MesNavegador mes={mes} onChange={setMes} marcas={marcas} />}
+        actions={
+          <>
+            <MesNavegador mes={mes} onChange={setMes} marcas={marcas} />
+            <Button
+              variant="secondary"
+              onClick={() => {
+                limpiarError()
+                setAgregando('miembro')
+              }}
+              title="Marcar como inversionista a un miembro de la iglesia"
+            >
+              <IdCard />
+              <span className="sm:hidden xl:inline">Desde miembros</span>
+            </Button>
+            <Button
+              onClick={() => {
+                limpiarError()
+                setAgregando('crear')
+              }}
+            >
+              <UserPlus />
+              Crear inversionista
+            </Button>
+          </>
+        }
       />
 
       {loading && inversionistas.length === 0 ? (
@@ -117,23 +174,45 @@ export function InversionistasModulo() {
         <EmptyState
           icon={HandCoins}
           title="Aún no hay inversionistas"
-          description="En el módulo Miembros, marca “¿Es inversionista del Reino?” en Sí y aparecerán aquí."
+          description="Crea un inversionista (no necesita ser miembro) o marca a un miembro de la iglesia."
+          action={
+            <Button onClick={() => setAgregando('crear')}>
+              <UserPlus />
+              Crear inversionista
+            </Button>
+          }
         />
       ) : (
         <>
           <ResumenCuotas
             mes={mes}
-            total={inversionistas.length}
-            pagadas={pagadas.length}
+            total={participaciones.length}
+            pagadas={participacionesPagadas.length}
+            personas={inversionistas.length}
             recaudadoMes={recaudadoMes}
             cuotasAnio={cuotasActivas.length}
             recaudadoAnio={recaudadoAnio}
             esperadoMes={esperadoMes}
           />
 
+          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-xs text-slate-600 shadow-xs sm:px-6">
+            <span className="font-semibold text-navy-900">Cómo leer la grilla:</span>
+            <span className="flex items-center gap-1.5">
+              <CategoriaBadge categoria="inversionista" /> participación desde {formatMoneda(CUOTA_INVERSIONISTA)}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CategoriaBadge categoria="microinversionista" /> participación menor
+            </span>
+            <span>
+              Una persona puede tener <strong className="font-semibold text-navy-900">ambas</strong>: cada participación se
+              cobra y se registra por separado.
+              {ambasCategorias > 0 && ` Hoy ${ambasCategorias} ${ambasCategorias === 1 ? 'persona tiene' : 'personas tienen'} las dos.`}
+            </span>
+          </div>
+
           <MensajeRecordatorio plantilla={plantilla} onChange={setPlantilla} />
 
-          {!formulario && !detalle && saveError && (
+          {!formulario && !detalle && agregando === null && saveError && (
             <div className="mb-4">
               <Alert>{saveError}</Alert>
             </div>
@@ -174,7 +253,7 @@ export function InversionistasModulo() {
                 <option value="">Todas las categorías</option>
                 {(Object.keys(CATEGORIAS) as Categoria[]).map((c) => (
                   <option key={c} value={c}>
-                    {CATEGORIAS[c].label} ({inversionistas.filter((p) => categoriaDe(p.cuota_mensual) === c).length})
+                    {CATEGORIAS[c].label} ({inversionistas.filter((p) => tieneCategoria(p, c)).length})
                   </option>
                 ))}
               </select>
@@ -195,7 +274,7 @@ export function InversionistasModulo() {
             {visibles.length === 0 ? (
               <p className="px-6 py-10 text-center text-sm text-slate-500">
                 {filtro === 'pendientes' && !q
-                  ? `¡Todos pagaron la cuota de ${nombreMes(mes)}! 🎉`
+                  ? `¡Todos están al día en ${nombreMes(mes)}! 🎉`
                   : 'No hay inversionistas que coincidan.'}
               </p>
             ) : (
@@ -205,10 +284,10 @@ export function InversionistasModulo() {
                     key={p.id}
                     inversionista={p}
                     mes={mes}
-                    mensaje={armarMensaje(plantilla, p.nombre, nombreMes(mes))}
-                    onRegistrar={() => abrir(p, null)}
-                    onEditar={() => abrir(p, p.cuotaDelMes)}
-                    onAnular={() => anularCuota(p)}
+                    mensaje={armarMensaje(plantilla, p.nombre, nombreMes(mes), formatMoneda(p.pendienteMes))}
+                    onRegistrar={(x) => abrir(p, x, null)}
+                    onEditar={(x, c) => abrir(p, x, c)}
+                    onAnular={(x, c) => anularCuota(p, x, c)}
                     onElegirMes={setMes}
                     onDetalle={() => {
                       limpiarError()
@@ -225,16 +304,23 @@ export function InversionistasModulo() {
       <Drawer
         abierto={!!formulario}
         titulo={formulario?.cuota ? 'Editar cuota' : 'Registrar cuota'}
-        subtitulo={formulario?.persona.nombre}
+        subtitulo={
+          formulario && (
+            <span className="flex flex-wrap items-center gap-2">
+              {formulario.persona.nombre} · {formatMoneda(formulario.participacion.monto)}
+              <CategoriaBadge categoria={formulario.participacion.categoria} />
+            </span>
+          )
+        }
         onCerrar={() => setFormulario(null)}
       >
         {formulario && (
           <CuotaForm
-            key={`${formulario.persona.id}-${formulario.cuota?.id ?? mes}`}
-            miembroId={formulario.persona.id}
+            key={`${formulario.participacion.id}-${formulario.cuota?.id ?? mes}`}
+            participacionId={formulario.participacion.id}
             mesInicial={mes}
             inicial={formulario.cuota}
-            montoSugerido={formulario.persona.cuota_mensual ?? formulario.persona.ultimoMonto}
+            montoSugerido={formulario.participacion.monto}
             guardando={guardando}
             error={saveError}
             onSubmit={guardar}
@@ -252,12 +338,52 @@ export function InversionistasModulo() {
           error={saveError}
           limpiarError={limpiarError}
           onCambiarAnio={(anio) => setMes(`${anio}${mes.slice(4)}`)}
-          onDefinirCuota={(monto) => definirCuota(detalle.id, monto)}
+          onCrearParticipacion={(input) => crearParticipacion(detalle.id, input)}
+          onActualizarParticipacion={actualizarParticipacion}
+          onFinalizarParticipacion={finalizarParticipacion}
           onGuardarCuota={(input, existente) => (existente ? actualizar(existente.id, input) : registrar(input))}
           onAnular={anular}
+          onActualizarExterno={(datos) => actualizarExterno(detalle.id, datos)}
+          onQuitar={async () => {
+            const ok = await quitar(detalle.id)
+            if (ok) setDetalleId(null)
+            return ok
+          }}
           onCerrar={() => setDetalleId(null)}
         />
       )}
+
+      <Drawer
+        abierto={agregando !== null}
+        titulo={agregando === 'miembro' ? 'Agregar desde Miembros' : 'Crear inversionista'}
+        subtitulo={agregando === 'miembro' ? 'Miembro de la iglesia que será inversionista' : 'No necesita ser miembro de la iglesia'}
+        onCerrar={() => setAgregando(null)}
+      >
+        {agregando === 'crear' && (
+          <CrearInversionista
+            guardando={guardando}
+            error={saveError}
+            onCrear={async (datos) => {
+              const ok = await crearExterno(datos)
+              if (ok) setAgregando(null)
+              return ok
+            }}
+            onCancelar={() => setAgregando(null)}
+          />
+        )}
+        {agregando === 'miembro' && (
+          <AgregarMiembroInversionista
+            guardando={guardando}
+            error={saveError}
+            onAgregar={async (id, cuota) => {
+              const ok = await agregarMiembro(id, cuota)
+              if (ok) setAgregando(null)
+              return ok
+            }}
+            onCancelar={() => setAgregando(null)}
+          />
+        )}
+      </Drawer>
     </>
   )
 }

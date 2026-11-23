@@ -6,6 +6,8 @@ interface Props {
   mes: string
   total: number
   pagadas: number
+  /** Personas (una persona puede tener varias participaciones) */
+  personas: number
   recaudadoMes: number
   cuotasAnio: number
   recaudadoAnio: number
@@ -41,7 +43,7 @@ function Tarjeta({
 }
 
 /** Totales del mes y del año, con barra de avance del recaudo */
-export function ResumenCuotas({ mes, total, pagadas, recaudadoMes, cuotasAnio, recaudadoAnio, esperadoMes }: Props) {
+export function ResumenCuotas({ mes, total, pagadas, personas, recaudadoMes, cuotasAnio, recaudadoAnio, esperadoMes }: Props) {
   const faltan = Math.max(total - pagadas, 0)
   const avance = total ? Math.round((pagadas / total) * 100) : 0
   const mesTexto = nombreMes(mes)
@@ -88,7 +90,7 @@ export function ResumenCuotas({ mes, total, pagadas, recaudadoMes, cuotasAnio, r
           tono="bg-emerald-50 text-emerald-600"
           titulo="Cuotas recaudadas"
           valor={String(pagadas)}
-          detalle={`de ${total} inversionista${total === 1 ? '' : 's'}`}
+          detalle={`de ${total} participacion${total === 1 ? '' : 'es'} · ${personas} persona${personas === 1 ? '' : 's'}`}
         />
         <Tarjeta
           Icono={CircleDashed}

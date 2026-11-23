@@ -1,17 +1,28 @@
-import { Gem, Sprout } from 'lucide-react'
 import { Badge } from '../../../components/ui/Badge'
-import { CATEGORIAS, categoriaDe } from '../types'
+import { ICONO_CATEGORIA } from '../estilos'
+import { CATEGORIAS, type Categoria } from '../types'
 
-/** Inversionista (cuota ≥ $400.000) o Microinversionista (cuota menor) */
-export function CategoriaBadge({ cuotaMensual }: { cuotaMensual: number | null }) {
-  const categoria = categoriaDe(cuotaMensual)
-  if (categoria === 'sin_cuota') return null
+/** Insignia de una categoría: 💎 Inversionista (≥ $400.000) o 🌱 Microinversionista */
+export function CategoriaBadge({ categoria, sufijo }: { categoria: Categoria; sufijo?: string }) {
   const { label, color } = CATEGORIAS[categoria]
-  const Icono = categoria === 'inversionista' ? Gem : Sprout
+  const Icono = ICONO_CATEGORIA[categoria]
   return (
     <Badge color={color}>
       <Icono className="h-3 w-3" />
       {label}
+      {sufijo}
     </Badge>
+  )
+}
+
+/** Todas las categorías de una persona (puede ser Inversionista y Microinversionista a la vez) */
+export function CategoriasPersona({ categorias }: { categorias: Categoria[] }) {
+  if (!categorias.length) return <Badge color="gray">Sin participación</Badge>
+  return (
+    <>
+      {categorias.map((c) => (
+        <CategoriaBadge key={c} categoria={c} />
+      ))}
+    </>
   )
 }

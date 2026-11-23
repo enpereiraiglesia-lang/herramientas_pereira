@@ -20,8 +20,12 @@ export function guardarPlantilla(texto: string) {
   }
 }
 
-/** Reemplaza {nombre} (primer nombre) y {mes} en la plantilla */
-export function armarMensaje(plantilla: string, nombre: string, mes: string) {
+/** Reemplaza {nombre} (primer nombre), {mes} y {monto} (lo pendiente) en la plantilla */
+export function armarMensaje(plantilla: string, nombre: string, mes: string, monto?: string) {
   const primerNombre = nombre.trim().split(/\s+/)[0] ?? nombre
-  return plantilla.replaceAll('{nombre}', primerNombre).replaceAll('{mes}', mes)
+  return plantilla
+    .replaceAll('{nombre}', primerNombre)
+    .replaceAll('{mes}', mes)
+    .replaceAll(' por {monto}', monto ? ` por ${monto}` : '')
+    .replaceAll('{monto}', monto ?? '')
 }
