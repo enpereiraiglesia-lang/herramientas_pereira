@@ -12,7 +12,7 @@ import { MiembroFila } from './MiembroFila'
 import { MiembroForm } from './MiembroForm'
 import { MiembrosFiltros } from './MiembrosFiltros'
 
-const FILTROS_INICIALES: FiltrosMiembros = { busqueda: '', inversionista: '', ceppev: '' }
+const FILTROS_INICIALES: FiltrosMiembros = { busqueda: '', inversionista: '', ceppev: '', rangoEdad: '' }
 
 /** Directorio de miembros: crear, editar, filtrar y eliminar */
 export function MiembrosModulo() {

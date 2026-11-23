@@ -10,6 +10,7 @@ export const miembrosService = {
     if (q) query = query.or(`nombre.ilike.%${q}%,celular.ilike.%${q}%,correo.ilike.%${q}%,direccion.ilike.%${q}%`)
     if (filtros.inversionista) query = query.eq('inversionista_reino', filtros.inversionista === 'si')
     if (filtros.ceppev) query = query.eq('fue_ceppev', filtros.ceppev === 'si')
+    if (filtros.rangoEdad) query = query.eq('rango_edad', filtros.rangoEdad)
 
     const { data, error } = await query
     if (error) throw error

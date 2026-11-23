@@ -1,9 +1,9 @@
-import { GraduationCap, HandCoins, Mail, MapPin, Pencil, Smartphone, Trash2 } from 'lucide-react'
+import { GraduationCap, HandCoins, Shield, Mail, MapPin, Pencil, Smartphone, Trash2 } from 'lucide-react'
 import { Avatar } from '../../../components/ui/Avatar'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
 import { formatMesAnio, telefonoLimpio, tiempoDesde } from '../../../lib/format'
-import type { Miembro } from '../types'
+import { RANGOS_EDAD, type Miembro } from '../types'
 
 interface Props {
   miembro: Miembro
@@ -49,6 +49,12 @@ export function MiembroFila({ miembro: m, onEditar, onEliminar }: Props) {
 
       {/* Indicadores */}
       <div className="flex flex-wrap items-center gap-1.5">
+        {m.rango_edad && (
+          <Badge color="purple">
+            <Shield className="h-3 w-3" />
+            {RANGOS_EDAD[m.rango_edad]}
+          </Badge>
+        )}
         {m.inversionista_reino && (
           <Badge color="green">
             <HandCoins className="h-3 w-3" />

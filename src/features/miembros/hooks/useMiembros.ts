@@ -7,7 +7,7 @@ import type { FiltrosMiembros, MiembroInput } from '../types'
 export function useMiembros(filtros: FiltrosMiembros) {
   const { data, loading, error, reload } = useAsync(
     () => miembrosService.listar(filtros),
-    [filtros.busqueda, filtros.inversionista, filtros.ceppev]
+    [filtros.busqueda, filtros.inversionista, filtros.ceppev, filtros.rangoEdad]
   )
   const [guardando, setGuardando] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)

@@ -322,6 +322,7 @@ export type Database = {
           cuota_mensual: number | null
           es_miembro: boolean
           fecha_aporte: string | null
+          rango_edad: 'tropa' | 'capitan' | 'valiente_de_david' | 'intendente' | 'colportor' | null
         }
         Insert: {
           id?: string
@@ -339,6 +340,7 @@ export type Database = {
           cuota_mensual?: number | null
           es_miembro?: boolean
           fecha_aporte?: string | null
+          rango_edad?: 'tropa' | 'capitan' | 'valiente_de_david' | 'intendente' | 'colportor' | null
         }
         Update: {
           id?: string
@@ -356,6 +358,7 @@ export type Database = {
           cuota_mensual?: number | null
           es_miembro?: boolean
           fecha_aporte?: string | null
+          rango_edad?: 'tropa' | 'capitan' | 'valiente_de_david' | 'intendente' | 'colportor' | null
         }
         Relationships: [
           {

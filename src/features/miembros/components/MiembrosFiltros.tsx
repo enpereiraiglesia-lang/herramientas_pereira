@@ -1,6 +1,6 @@
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
-import { OPCIONES_SI_NO, type FiltroSiNo, type FiltrosMiembros } from '../types'
+import { OPCIONES_RANGO_EDAD, OPCIONES_SI_NO, type FiltroSiNo, type FiltrosMiembros, type RangoEdad } from '../types'
 
 interface Props {
   filtros: FiltrosMiembros
@@ -9,7 +9,7 @@ interface Props {
 
 export function MiembrosFiltros({ filtros, onChange }: Props) {
   return (
-    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
+    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
       <div className="sm:col-span-2 lg:col-span-1">
         <Input
           label="Buscar"
@@ -35,6 +35,14 @@ export function MiembrosFiltros({ filtros, onChange }: Props) {
         options={OPCIONES_SI_NO}
         value={filtros.ceppev}
         onChange={(e) => onChange({ ...filtros, ceppev: e.target.value as FiltroSiNo })}
+      />
+      <Select
+        label="Rango de edad"
+        name="filtro_rango_edad"
+        placeholder="Todos"
+        options={OPCIONES_RANGO_EDAD}
+        value={filtros.rangoEdad}
+        onChange={(e) => onChange({ ...filtros, rangoEdad: e.target.value as RangoEdad | '' })}
       />
     </div>
   )

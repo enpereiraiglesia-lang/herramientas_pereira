@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react'
 import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
+import { Select } from '../../../components/ui/Select'
 import { mesActual } from '../../../components/ui/calendario/fechas'
 import { MonthPicker } from '../../../components/ui/MonthPicker'
 import { GrupoSelect } from '../../grupos/components/GrupoSelect'
 import { tiempoDesde } from '../../../lib/format'
-import type { Miembro, MiembroInput } from '../types'
+import { OPCIONES_RANGO_EDAD, type Miembro, type MiembroInput, type RangoEdad } from '../types'
 import { PreguntaSiNo } from './PreguntaSiNo'
 
 interface Props {
@@ -35,6 +36,7 @@ export function MiembroForm({ inicial, guardando, error, onSubmit, onCancel }: P
       celular: texto('celular'),
       correo: texto('correo')?.toLowerCase() ?? null,
       direccion: texto('direccion'),
+      rango_edad: (String(f.get('rango_edad') ?? '') || null) as RangoEdad | null,
       // Solo se envía si cambió (así no se pierde un grupo inactivo que no aparece en la lista)
       ...(grupoFamiliar !== (inicial?.grupo_familiar_id ?? '') && { grupo_familiar_id: grupoFamiliar || null }),
       ...(camara !== (inicial?.camara_id ?? '') && { camara_id: camara || null }),
@@ -54,6 +56,13 @@ export function MiembroForm({ inicial, guardando, error, onSubmit, onCancel }: P
         <Input label="Dirección" name="direccion" defaultValue={inicial?.direccion ?? ''} />
         <GrupoSelect tipo="grupo_familiar" value={grupoFamiliar} onChange={setGrupoFamiliar} />
         <GrupoSelect tipo="camara" value={camara} onChange={setCamara} />
+        <Select
+          label="Rango de edad"
+          name="rango_edad"
+          placeholder="Sin definir"
+          options={OPCIONES_RANGO_EDAD}
+          defaultValue={inicial?.rango_edad ?? ''}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
