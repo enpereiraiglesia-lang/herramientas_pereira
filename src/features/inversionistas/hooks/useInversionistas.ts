@@ -50,12 +50,12 @@ export function useInversionistas(mes: string) {
     return resultado
   }, [inversionistas, anio])
 
-  async function ejecutar(fn: () => Promise<unknown>) {
+  async function ejecutar(fn: () => Promise<unknown>, recargar: () => Promise<void> = cuotas.reload) {
     setGuardando(true)
     setSaveError(null)
     try {
       await fn()
-      await cuotas.reload()
+      await recargar()
       return true
     } catch (err) {
       const msg = mensajeError(err, 'No se pudo guardar')
@@ -78,5 +78,7 @@ export function useInversionistas(mes: string) {
     registrar: (input: CuotaInput) => ejecutar(() => inversionistasService.registrar(input)),
     actualizar: (id: string, input: Partial<CuotaInput>) => ejecutar(() => inversionistasService.actualizar(id, input)),
     anular: (id: string) => ejecutar(() => inversionistasService.anular(id)),
+    definirCuota: (miembroId: string, monto: number | null) =>
+      ejecutar(() => inversionistasService.definirCuota(miembroId, monto), personas.reload),
   }
 }

@@ -9,6 +9,8 @@ interface Props {
   recaudadoMes: number
   cuotasAnio: number
   recaudadoAnio: number
+  /** Suma de las cuotas pactadas (0 = ninguna definida) */
+  esperadoMes: number
 }
 
 function Tarjeta({
@@ -39,7 +41,7 @@ function Tarjeta({
 }
 
 /** Totales del mes y del año, con barra de avance del recaudo */
-export function ResumenCuotas({ mes, total, pagadas, recaudadoMes, cuotasAnio, recaudadoAnio }: Props) {
+export function ResumenCuotas({ mes, total, pagadas, recaudadoMes, cuotasAnio, recaudadoAnio, esperadoMes }: Props) {
   const faltan = Math.max(total - pagadas, 0)
   const avance = total ? Math.round((pagadas / total) * 100) : 0
   const mesTexto = nombreMes(mes)
@@ -100,7 +102,7 @@ export function ResumenCuotas({ mes, total, pagadas, recaudadoMes, cuotasAnio, r
           tono="bg-primary-50 text-primary-600"
           titulo="Recaudado en el mes"
           valor={formatMoneda(recaudadoMes)}
-          detalle={mesTexto}
+          detalle={esperadoMes ? `de ${formatMoneda(esperadoMes)} esperados` : mesTexto}
         />
         <Tarjeta
           Icono={Layers}

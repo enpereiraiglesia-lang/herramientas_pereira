@@ -5,7 +5,7 @@ export const inversionistasService = {
   async listarInversionistas() {
     const { data, error } = await supabase
       .from('miembros')
-      .select('id, nombre, celular, correo')
+      .select('id, nombre, celular, correo, cuota_mensual')
       .eq('inversionista_reino', true)
       .order('nombre')
     if (error) throw error
@@ -32,6 +32,12 @@ export const inversionistasService = {
     const { data, error } = await supabase.from('cuotas_inversionistas').update(input).eq('id', id).select('id')
     if (error) throw error
     if (!data.length) throw new Error('No tienes permiso para editar esta cuota')
+  },
+
+  /** Cuota mensual pactada del inversionista (null = sin definir) */
+  async definirCuota(miembroId: string, monto: number | null) {
+    const { error } = await supabase.rpc('definir_cuota_inversionista', { p_miembro: miembroId, p_monto: monto })
+    if (error) throw error
   },
 
   async anular(id: string) {

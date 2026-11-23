@@ -11,6 +11,7 @@ import { mesActual, nombreMes } from '../../../components/ui/calendario/fechas'
 import { useInversionistas } from '../hooks/useInversionistas'
 import type { Cuota, CuotaInput, FiltroEstado, InversionistaConEstado } from '../types'
 import { CuotaForm } from './CuotaForm'
+import { DetalleInversionista } from './DetalleInversionista'
 import { InversionistaFila } from './InversionistaFila'
 import { armarMensaje, leerPlantilla } from '../mensaje'
 import { MensajeRecordatorio } from './MensajeRecordatorio'
@@ -36,8 +37,23 @@ export function InversionistasModulo() {
   const [plantilla, setPlantilla] = useState(leerPlantilla)
   const [formulario, setFormulario] = useState<Formulario | null>(null)
 
-  const { inversionistas, cuotasDelAnio, marcas, loading, error, guardando, saveError, limpiarError, registrar, actualizar, anular } =
-    useInversionistas(mes)
+  const {
+    inversionistas,
+    cuotasDelAnio,
+    marcas,
+    loading,
+    error,
+    guardando,
+    saveError,
+    limpiarError,
+    registrar,
+    actualizar,
+    anular,
+    definirCuota,
+  } = useInversionistas(mes)
+  const [detalleId, setDetalleId] = useState<string | null>(null)
+  const detalle = inversionistas.find((p) => p.id === detalleId) ?? null
+  const esperadoMes = inversionistas.reduce((s, p) => s + (p.cuota_mensual ?? 0), 0)
 
   const pagadas = inversionistas.filter((p) => p.cuotaDelMes)
   const pendientes = inversionistas.length - pagadas.length
@@ -102,11 +118,12 @@ export function InversionistasModulo() {
             recaudadoMes={recaudadoMes}
             cuotasAnio={cuotasActivas.length}
             recaudadoAnio={recaudadoAnio}
+            esperadoMes={esperadoMes}
           />
 
           <MensajeRecordatorio plantilla={plantilla} onChange={setPlantilla} />
 
-          {!formulario && saveError && (
+          {!formulario && !detalle && saveError && (
             <div className="mb-4">
               <Alert>{saveError}</Alert>
             </div>
@@ -168,6 +185,10 @@ export function InversionistasModulo() {
                     onEditar={() => abrir(p, p.cuotaDelMes)}
                     onAnular={() => anularCuota(p)}
                     onElegirMes={setMes}
+                    onDetalle={() => {
+                      limpiarError()
+                      setDetalleId(p.id)
+                    }}
                   />
                 ))}
               </ul>
@@ -188,7 +209,7 @@ export function InversionistasModulo() {
             miembroId={formulario.persona.id}
             mesInicial={mes}
             inicial={formulario.cuota}
-            montoSugerido={formulario.persona.ultimoMonto}
+            montoSugerido={formulario.persona.cuota_mensual ?? formulario.persona.ultimoMonto}
             guardando={guardando}
             error={saveError}
             onSubmit={guardar}
@@ -196,6 +217,22 @@ export function InversionistasModulo() {
           />
         )}
       </Drawer>
+
+      {detalle && (
+        <DetalleInversionista
+          persona={detalle}
+          mes={mes}
+          plantilla={plantilla}
+          guardando={guardando}
+          error={saveError}
+          limpiarError={limpiarError}
+          onCambiarAnio={(anio) => setMes(`${anio}${mes.slice(4)}`)}
+          onDefinirCuota={(monto) => definirCuota(detalle.id, monto)}
+          onGuardarCuota={(input, existente) => (existente ? actualizar(existente.id, input) : registrar(input))}
+          onAnular={anular}
+          onCerrar={() => setDetalleId(null)}
+        />
+      )}
     </>
   )
 }

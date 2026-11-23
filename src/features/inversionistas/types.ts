@@ -3,7 +3,7 @@ import type { Tables, TablesInsert } from '../../types/database'
 export type Cuota = Tables<'cuotas_inversionistas'>
 export type CuotaInput = Omit<TablesInsert<'cuotas_inversionistas'>, 'id' | 'created_at' | 'registrado_por'>
 
-export type Inversionista = Pick<Tables<'miembros'>, 'id' | 'nombre' | 'celular' | 'correo'>
+export type Inversionista = Pick<Tables<'miembros'>, 'id' | 'nombre' | 'celular' | 'correo' | 'cuota_mensual'>
 
 export type FiltroEstado = 'todos' | 'pendientes' | 'al_dia'
 

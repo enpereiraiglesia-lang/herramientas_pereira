@@ -319,6 +319,7 @@ export type Database = {
           creado_por: string | null
           grupo_familiar_id: string | null
           camara_id: string | null
+          cuota_mensual: number | null
         }
         Insert: {
           id?: string
@@ -333,6 +334,7 @@ export type Database = {
           creado_por?: string | null
           grupo_familiar_id?: string | null
           camara_id?: string | null
+          cuota_mensual?: number | null
         }
         Update: {
           id?: string
@@ -347,6 +349,7 @@ export type Database = {
           creado_por?: string | null
           grupo_familiar_id?: string | null
           camara_id?: string | null
+          cuota_mensual?: number | null
         }
         Relationships: [
           {
@@ -598,6 +601,7 @@ export type Database = {
       quitar_miembro_grupo: { Args: { p_grupo: string; p_miembro: string }; Returns: undefined }
       vincular_contacto_grupo: { Args: { p_contacto: string; p_grupo: string }; Returns: undefined }
       desvincular_contacto_grupo: { Args: { p_contacto: string; p_grupo: string }; Returns: undefined }
+      definir_cuota_inversionista: { Args: { p_miembro: string; p_monto: number | null }; Returns: undefined }
     }
     Enums: {
       rol_usuario: 'administrador' | 'colaborador'

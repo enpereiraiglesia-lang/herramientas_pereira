@@ -15,19 +15,42 @@ interface Props {
   onEditar: () => void
   onAnular: () => void
   onElegirMes: (mes: string) => void
+  /** Abre el detalle (doble clic en la fila o toque en el nombre) */
+  onDetalle: () => void
 }
 
 /** Fila de un inversionista: estado de la cuota del mes, historial del año y acciones */
-export function InversionistaFila({ inversionista: p, mes, mensaje, onRegistrar, onEditar, onAnular, onElegirMes }: Props) {
+export function InversionistaFila({ inversionista: p, mes, mensaje, onRegistrar, onEditar, onAnular, onElegirMes, onDetalle }: Props) {
   const cuota = p.cuotaDelMes
 
   return (
-    <li className="grid grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.6fr)_auto] lg:items-center">
+    <li
+      onDoubleClick={(e) => {
+        // El doble clic sobre botones o enlaces no abre el detalle
+        if (!(e.target as HTMLElement).closest('button, a, input')) onDetalle()
+      }}
+      title="Doble clic para ver el detalle"
+      className="grid cursor-pointer grid-cols-1 gap-4 px-4 py-4 transition-colors select-none hover:bg-slate-50/70 sm:px-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.6fr)_auto] lg:items-center"
+    >
       {/* Persona */}
       <div className="flex min-w-0 items-center gap-3">
         <Avatar nombre={p.nombre} />
         <div className="min-w-0">
-          <p className="truncate font-semibold text-navy-900">{p.nombre}</p>
+          <button
+            type="button"
+            onClick={onDetalle}
+            className="block max-w-full truncate text-left font-semibold text-navy-900 hover:text-primary-700 hover:underline"
+          >
+            {p.nombre}
+          </button>
+          <p className="text-xs text-slate-500">
+            Cuota:{' '}
+            {p.cuota_mensual != null ? (
+              <span className="font-medium text-navy-900">{formatMoneda(p.cuota_mensual)}/mes</span>
+            ) : (
+              <span className="text-amber-700">sin definir</span>
+            )}
+          </p>
           {p.celular ? (
             <a
               href={`tel:${telefonoLimpio(p.celular)}`}
